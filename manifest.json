@@ -1,0 +1,17 @@
+{
+  "name": "unnibeauty",
+  "short_name": "unnibeauty",
+  "description": "El cuidado de tu piel comienza aquí",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#FAF6F0",
+  "theme_color": "#3D7A62",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
