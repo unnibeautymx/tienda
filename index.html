@@ -274,7 +274,7 @@
     background: var(--crema); width: 100%; max-height: 88vh; overflow-y: auto;
     border-radius: 16px 16px 0 0; padding: 16px 14px calc(16px + env(safe-area-inset-bottom));
   }
-  .panel h2 { margin: 0 0 3px; font-size: 17px; color: var(--jade-oscuro); }
+  .panel h2 { margin: 0 0 8px; font-size: 17px; color: var(--jade-oscuro); }
   .renglon {
     display: flex; gap: 10px; align-items: center;
     padding: 9px 0; border-bottom: 1px solid var(--linea);
@@ -464,8 +464,14 @@
 
 <div class="telon" id="telon" style="display:none" onclick="if(event.target===this) cerrarCarrito()">
   <div class="panel">
-    <h2>Tu pedido</h2>
-    <p class="pie" style="margin:0 0 10px">Nos lo mandas por mensaje y te confirmamos existencia y envío.</p>
+    <div class="cerrar-ficha">
+      <button onclick="cerrarCarrito()" aria-label="Cerrar">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+          <path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
+      </button>
+    </div>
+    <h2 id="tituloPedido">Tu pedido</h2>
     <div id="renglones"></div>
     <div class="totales" id="totales"></div>
 
@@ -995,6 +1001,7 @@
     document.getElementById('telon').style.display = 'none';
     // El panel vuelve a su estado inicial: si no, tras un pedido enviado
     // seguiría mostrando la confirmación la próxima vez que se abra.
+    document.getElementById('tituloPedido').style.display = '';
     document.getElementById('formulario').style.display = '';
     document.getElementById('confirmacion').style.display = 'none';
     document.getElementById('errorPedido').innerHTML = '';
@@ -1115,6 +1122,9 @@
     // Se recarga el catálogo: lo que acaba de apartarse ya no debe aparecer
     // disponible para quien siga navegando en este mismo teléfono.
     cargar();
+    // La confirmación se queda sola: fuera el título, el desglose y el
+    // formulario. Lo único que queda por hacer es volver a la tienda.
+    document.getElementById('tituloPedido').style.display = 'none';
     document.getElementById('formulario').style.display = 'none';
     document.getElementById('renglones').innerHTML = '';
     document.getElementById('totales').innerHTML = '';
@@ -1133,7 +1143,8 @@
         '. Y si tienes dudas de cómo usar algo, ahí mismo te orientamos.</p>' +
       '<p class="pie" style="margin:10px 0 0">Nada se cobró desde aquí.</p>' +
       '</div>' +
-      '<button class="enviar cerrar" onclick="cerrarCarrito()">Volver a la tienda</button>';
+      '<button class="enviar wa" style="margin-top:14px" onclick="cerrarCarrito()">' +
+        'Volver a la tienda</button>';
   }
 
   function pintarContacto() {
