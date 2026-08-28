@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>unni beauty · skincare coreano en Mazatlán</title>
+<meta name="description" content="Skincare coreano original en Mazatlán. Consulta existencia, precios y haz tu pedido en línea.">
+<meta name="theme-color" content="#3D7A62">
+
+<!-- Cómo se ve al compartir el enlace por WhatsApp o Instagram -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="unni beauty">
+<meta property="og:description" content="Skincare coreano en Mazatlán. Mira lo que hay y pide en línea.">
+<meta property="og:image" content="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
+
+<!-- El ícono que Apps Script no dejaba poner -->
+<link rel="icon" href="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
+<link rel="apple-touch-icon" href="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
+<link rel="manifest" href="manifest.json">
+
+<style>
+
+  :root {
+    --jade: #3D7A62;
+    --jade-oscuro: #1C4A38;
+    --crema: #FAF6F0;
+    --rosa: #C47A8A;
+    --linea: #E8E0D5;
+    --tinta: #2B2A28;
+    --tenue: #6B6257;
+    /* Estados de existencia. Mismos tonos que la app de administración para
+       que un producto se lea igual de los dos lados. */
+    --hay: #3D7A62;
+    --pocas: #8F6714;
+    --camino: #2C6E9B;
+    --agotado: #615D59;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0 0 32px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    font-size: 15px;
+    color: var(--tinta);
+    background: var(--crema);
+    -webkit-text-size-adjust: 100%;
+  }
+  .envoltura { max-width: 620px; margin: 0 auto; padding: 0 14px; }
+
+  /* ------------------------------------------------------- Encabezado */
+  header { text-align: center; padding: 22px 14px 14px; }
+  header img { width: 84px; height: 84px; object-fit: contain; }
+  header h1 {
+    margin: 8px 0 2px; font-size: 21px; font-weight: 700;
+    color: var(--jade-oscuro); letter-spacing: .01em;
+  }
+  header p { margin: 0; font-size: 13px; color: var(--tenue); }
+
+  /* ------------------------------------------------------- Buscador */
+  .barra {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--crema); padding: 10px 0 8px;
+    border-bottom: 1px solid var(--linea);
+  }
+  input[type=search] {
+    width: 100%; padding: 11px 14px; font-size: 15px;
+    border: 1px solid #C9BFB2; border-radius: 24px;
+    background: #fff; color: var(--tinta); -webkit-appearance: none;
+  }
+  input[type=search]:focus { outline: 2px solid var(--jade); outline-offset: -1px; }
+
+  .categorias {
+    display: flex; gap: 6px; overflow-x: auto; margin-top: 8px;
+    padding-bottom: 2px; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .categorias::-webkit-scrollbar { display: none; }
+  .categorias button {
+    flex: 0 0 auto; padding: 6px 13px; font-size: 13px; font-weight: 600;
+    border: 1px solid var(--jade); border-radius: 16px;
+    background: transparent; color: var(--jade); cursor: pointer;
+    white-space: nowrap;
+  }
+  .categorias button.activa { background: var(--jade); color: #fff; }
+
+  /* ------------------------------------------------------- Productos */
+  .conteo { font-size: 12px; color: var(--tenue); margin: 12px 0 8px; }
+
+  /* Cuadrícula: dos por renglón en celular, tres en pantalla ancha */
+  .rejilla { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  @media (min-width: 560px) { .rejilla { grid-template-columns: repeat(3, 1fr); } }
+
+  .producto {
+    background: #fff; border: 1px solid var(--linea); border-radius: 10px;
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .producto.sin-existencia { opacity: .62; }
+
+  /* El recuadro de la foto siempre ocupa su lugar, haya foto o no: así la
+     cuadrícula no se desacomoda conforme se van cargando las imágenes. */
+  .foto {
+    position: relative; width: 100%; aspect-ratio: 1 / 1;
+    background: #F1EAE0; display: flex; align-items: center; justify-content: center;
+    border-bottom: 1px solid var(--linea);
+  }
+  .foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .foto .marca-agua {
+    font-size: 11px; font-weight: 700; letter-spacing: .06em;
+    color: #C9BFB2; text-transform: lowercase;
+  }
+  .chip {
+    position: absolute; left: 6px; bottom: 6px;
+    padding: 3px 9px; border-radius: 12px;
+    font-size: 10.5px; font-weight: 700; color: #fff;
+  }
+
+  .datos { padding: 9px 10px 11px; display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .nombre { font-weight: 700; font-size: 13.5px; line-height: 1.3; }
+  .marca { font-size: 11.5px; color: var(--tenue); }
+  .precio {
+    margin-top: auto; padding-top: 5px;
+    font-size: 15px; font-weight: 700; color: var(--jade-oscuro);
+  }
+  .chip.hay { background: var(--hay); }
+  .chip.pocas { background: var(--pocas); }
+  .chip.camino { background: var(--camino); }
+  .chip.agotado { background: var(--agotado); }
+
+  /* --------------------------------------------------- Carrito */
+  .agregar {
+    margin-top: 7px; width: 100%; padding: 8px; font-size: 13px; font-weight: 700;
+    border: 1px solid var(--jade); border-radius: 18px;
+    background: transparent; color: var(--jade); cursor: pointer;
+  }
+  .agregar:active { background: var(--jade); color: #fff; }
+  .sin-boton { margin-top: 7px; font-size: 12px; color: var(--tenue); text-align: center; padding: 8px 0; }
+
+  .paso { margin-top: 7px; display: flex; align-items: center; gap: 6px; }
+  .paso button {
+    width: 30px; height: 30px; flex: 0 0 auto; padding: 0;
+    font-size: 17px; font-weight: 700; line-height: 1;
+    border: 1px solid var(--jade); border-radius: 50%;
+    background: #fff; color: var(--jade); cursor: pointer;
+  }
+  .paso .cuenta { flex: 1; text-align: center; font-weight: 700; font-size: 14px; color: var(--jade-oscuro); }
+
+  /* Barra fija del carrito. Solo aparece cuando hay algo dentro. */
+  .barra-carrito {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    background: var(--jade-oscuro); color: #fff;
+    padding: 11px 14px calc(11px + env(safe-area-inset-bottom));
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 -2px 12px rgba(0,0,0,.16);
+  }
+  .barra-carrito .resumen { flex: 1; min-width: 0; line-height: 1.25; }
+  .barra-carrito .resumen small { opacity: .82; font-size: 11.5px; }
+  .barra-carrito .resumen b { font-size: 17px; }
+  .barra-carrito button {
+    flex: 0 0 auto; padding: 11px 18px; font-size: 14px; font-weight: 700;
+    border: none; border-radius: 22px; background: #fff; color: var(--jade-oscuro);
+    cursor: pointer;
+  }
+  body.con-carrito { padding-bottom: 96px; }
+
+  /* --------------------------------------------------- Revisión */
+  .telon {
+    position: fixed; inset: 0; z-index: 30;
+    background: rgba(28,74,56,.45); display: flex; align-items: flex-end;
+  }
+  .panel {
+    background: var(--crema); width: 100%; max-height: 88vh; overflow-y: auto;
+    border-radius: 16px 16px 0 0; padding: 16px 14px calc(16px + env(safe-area-inset-bottom));
+  }
+  .panel h2 { margin: 0 0 3px; font-size: 17px; color: var(--jade-oscuro); }
+  .renglon {
+    display: flex; gap: 10px; align-items: center;
+    padding: 9px 0; border-bottom: 1px solid var(--linea);
+  }
+  .renglon .desc { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.3; }
+  .renglon .desc small { color: var(--tenue); font-size: 11.5px; }
+  .renglon .importe { font-weight: 700; font-size: 14px; white-space: nowrap; }
+  .totales { margin: 12px 0 4px; }
+  .totales .renglon { border: none; padding: 3px 0; }
+  .enviar {
+    display: block; width: 100%; text-align: center; text-decoration: none;
+    padding: 14px; border-radius: 26px; font-weight: 700; font-size: 15px;
+    margin-top: 10px; border: none; cursor: pointer;
+  }
+  .enviar.wa { background: var(--jade); color: #fff; }
+  .enviar.ig { background: transparent; color: var(--jade); border: 1px solid var(--jade); }
+  .enviar.cerrar { background: transparent; color: var(--tenue); font-weight: 600; font-size: 13px; padding: 8px; }
+  #copiar {
+    width: 100%; margin-top: 8px; padding: 9px; font-size: 12.5px;
+    border: 1px solid var(--linea); border-radius: 8px; background: #fff;
+    color: var(--tinta); font-family: inherit; resize: vertical;
+  }
+
+  #formulario label {
+    display: block; font-size: 12.5px; font-weight: 700;
+    color: var(--jade-oscuro); margin: 10px 0 3px;
+  }
+  #formulario .opcional { font-weight: 400; color: var(--tenue); }
+  #formulario input {
+    width: 100%; padding: 11px 12px; font-size: 15px;
+    border: 1px solid #C9BFB2; border-radius: 8px; background: #fff;
+    color: var(--tinta); -webkit-appearance: none;
+  }
+  #formulario input:focus { outline: 2px solid var(--jade); outline-offset: -1px; }
+  #formulario input.mal { border-color: var(--rojo); }
+  .exito {
+    background: #fff; border: 1px solid var(--jade); border-radius: 10px;
+    padding: 18px 16px; text-align: center;
+  }
+  .exito .folio {
+    display: inline-block; margin: 8px 0 10px; padding: 5px 14px;
+    background: var(--jade); color: #fff; border-radius: 14px;
+    font-weight: 700; letter-spacing: .04em;
+  }
+
+  .aviso, .cargando, .error {
+    padding: 16px; border-radius: 10px; margin: 14px 0;
+    font-size: 14px; text-align: center;
+  }
+  .aviso { background: #fff; border: 1px solid var(--linea); color: var(--tenue); }
+  .cargando { color: var(--tenue); }
+  .error { background: #F6DBDE; border: 1px solid #A8202F; color: #A8202F; text-align: left; }
+
+  /* ------------------------------------------------------- Contacto */
+  .contacto { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--linea); }
+  .contacto p { font-size: 13px; color: var(--tenue); text-align: center; margin: 0 0 12px; }
+  .contacto a {
+    display: block; text-align: center; text-decoration: none;
+    padding: 13px; border-radius: 25px; font-weight: 700; font-size: 15px;
+    margin-bottom: 9px;
+  }
+  .wa { background: var(--jade); color: #fff; }
+  .ig { background: transparent; color: var(--jade); border: 1px solid var(--jade); }
+  footer { text-align: center; font-size: 11.5px; color: var(--tenue); margin-top: 16px; }
+</style>
+</head>
+<body>
+
+
+<header>
+  <img id="logo" alt="unni beauty" src="">
+  <h1>unni beauty</h1>
+  <p>skincare coreano en Mazatlán</p>
+</header>
+
+<div class="envoltura">
+  <div class="barra">
+    <input type="search" id="buscar" placeholder="Busca por producto o marca" oninput="pintar()">
+    <div class="categorias" id="categorias"></div>
+  </div>
+
+  <div id="conteo" class="conteo"></div>
+  <div id="lista"><div class="cargando">Cargando el catálogo…</div></div>
+  <noscript><div class="aviso">Activa JavaScript para ver el catálogo.</div></noscript>
+
+  <div class="contacto" id="contacto" style="display:none">
+    <p>¿Dudas sobre un producto? Escríbenos.</p>
+    <a class="wa" id="enlaceWa" target="_blank" rel="noopener">Escribir por WhatsApp</a>
+    <a class="ig" id="enlaceIg" target="_blank" rel="noopener">Escribir por Instagram</a>
+  </div>
+
+  <footer id="pie"></footer>
+</div>
+
+<div class="barra-carrito" id="barraCarrito" style="display:none">
+  <div class="resumen">
+    <small id="carritoPiezas"></small><br>
+    <b id="carritoTotal"></b>
+  </div>
+  <button onclick="abrirCarrito()">Ver pedido</button>
+</div>
+
+<div class="telon" id="telon" style="display:none" onclick="if(event.target===this) cerrarCarrito()">
+  <div class="panel">
+    <h2>Tu pedido</h2>
+    <p class="pie" style="margin:0 0 10px">Nos lo mandas por mensaje y te confirmamos existencia y envío.</p>
+    <div id="renglones"></div>
+    <div class="totales" id="totales"></div>
+
+    <div id="formulario">
+      <label for="f-nombre">Tu nombre</label>
+      <input type="text" id="f-nombre" autocomplete="name" placeholder="Nombre y apellido">
+      <label for="f-whatsapp">Tu WhatsApp</label>
+      <input type="tel" id="f-whatsapp" autocomplete="tel" inputmode="numeric"
+             placeholder="10 dígitos, con lada">
+      <label for="f-instagram">Tu Instagram <span class="opcional">opcional</span></label>
+      <input type="text" id="f-instagram" placeholder="usuario, sin la arroba">
+      <p class="pie">Te escribimos para confirmarte existencia, el costo de envío y cómo pagar.</p>
+      <div id="errorPedido"></div>
+      <button class="enviar wa" id="btnEnviar" onclick="enviarPedido()">Enviar pedido</button>
+      <button class="enviar cerrar" onclick="cerrarCarrito()">Seguir viendo productos</button>
+    </div>
+
+    <div id="confirmacion" style="display:none"></div>
+  </div>
+</div>
+
+
+<script>
+  /* ------------------------------------------------------------------
+   * PEGA AQUÍ LA URL DE TU APPS SCRIPT, la que termina en /exec.
+   * Es la misma que ya tienes publicada. No lleva /u/0/ ni nada después.
+   * ------------------------------------------------------------------ */
+  var API = 'https://script.google.com/macros/s/AKfycbzF1PC5NZB9cGq4N2TkhBLUSwSuD2dHivbs6hgeAiBPs2b7SFScyDHg0MD2JI09tttf/exec';
+
+  var datos = null;
+  var categoriaActiva = '';
+
+  function esc(t) {
+    return String(t == null ? '' : t)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function moneda(n) {
+    return '$' + Number(n || 0).toLocaleString('es-MX', {
+      minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
+  }
+
+  // "serum" debe encontrar "Sérum": en el celular nadie escribe acentos.
+  function sinAcentos(t) {
+    return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  // El estado de "quedan pocas" trae el número adentro, así que se reconoce
+  // por cómo empieza y no por el texto completo.
+  function claseChip(estado) {
+    if (estado === 'Disponible') return 'hay';
+    if (estado === 'Vuelve pronto') return 'camino';
+    if (estado === 'Agotado') return 'agotado';
+    return 'pocas';
+  }
+
+  /**
+   * Habla con el Apps Script, que aquí es solo un servicio de datos: la
+   * página la sirve GitHub. Por eso desaparece el enredo de cuentas de
+   * Google, esta petición viaja sin sesión de nadie.
+   */
+  function pedirDatos(cuerpo) {
+    var opciones = cuerpo
+      // Texto plano y no JSON a propósito: con Content-Type de JSON el
+      // navegador manda antes una petición de permiso que Apps Script no
+      // sabe contestar, y la llamada muere sin llegar.
+      ? { method: 'POST', body: JSON.stringify(cuerpo),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' } }
+      : { method: 'GET' };
+    var url = API + (cuerpo ? '' : (API.indexOf('?') < 0 ? '?' : '&') + 'api=1');
+    return fetch(url, opciones)
+      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (!r.ok) throw new Error(r.error || 'Algo salió mal.');
+        return r.datos;
+      });
+  }
+
+  function cargar() {
+    pedirDatos(null).then(function (r) {
+      datos = r;
+      document.getElementById('logo').src = r.logo || '';
+      pintarCategorias();
+      pintarContacto();
+      pintar();
+      pintarBarra();
+    })['catch'](function (e) {
+      document.getElementById('lista').innerHTML =
+        '<div class="error">No pudimos cargar el catálogo en este momento. ' +
+        'Vuelve a intentar en un minuto.<br><br>' + esc(e.message) + '</div>';
+    });
+  }
+
+  function pintarCategorias() {
+    var todas = [''].concat(datos.categorias);
+    document.getElementById('categorias').innerHTML = todas.map(function (c) {
+      return '<button class="' + (c === categoriaActiva ? 'activa' : '') + '" ' +
+        'onclick="elegirCategoria(' + JSON.stringify(c).replace(/"/g, '&quot;') + ')">' +
+        esc(c || 'Todo') + '</button>';
+    }).join('');
+  }
+
+  function elegirCategoria(c) {
+    categoriaActiva = c;
+    pintarCategorias();
+    pintar();
+  }
+
+  function pintar() {
+    if (!datos) return;
+    var q = sinAcentos(document.getElementById('buscar').value.trim());
+    var visibles = datos.productos.filter(function (p) {
+      if (categoriaActiva && p.tipo !== categoriaActiva) return false;
+      if (q && sinAcentos(p.nombre + ' ' + p.marca + ' ' + p.presentacion).indexOf(q) < 0) return false;
+      return true;
+    });
+
+    var hay = visibles.filter(function (p) { return p.sePuedePedir; }).length;
+    document.getElementById('conteo').textContent = visibles.length
+      ? visibles.length + (visibles.length === 1 ? ' producto' : ' productos') +
+        (hay < visibles.length ? ' · ' + hay + ' con existencia' : '')
+      : '';
+
+    if (!visibles.length) {
+      document.getElementById('lista').innerHTML =
+        '<div class="aviso">No encontramos nada con esa búsqueda.<br>' +
+        'Escríbenos y te ayudamos a buscarlo.</div>';
+      return;
+    }
+
+    document.getElementById('lista').innerHTML = '<div class="rejilla">' +
+      visibles.map(function (p) {
+        // Si la foto no carga, se oculta y queda el recuadro con la marca de
+        // agua: nunca el ícono de imagen rota.
+        var foto = p.foto
+          ? '<img src="' + esc(p.foto) + '" alt="' + esc(p.nombre) + '" loading="lazy" ' +
+            'onerror="this.style.display=\'none\'">'
+          : '<span class="marca-agua">unni beauty</span>';
+        return '<div class="producto' + (p.sePuedePedir ? '' : ' sin-existencia') + '">' +
+          '<div class="foto">' + foto +
+            '<span class="chip ' + claseChip(p.estado) + '">' + esc(p.estado) + '</span>' +
+          '</div>' +
+          '<div class="datos">' +
+            '<div class="nombre">' + esc(p.nombre) + '</div>' +
+            '<div class="marca">' + esc(p.marca) +
+              (p.presentacion ? ' · ' + esc(p.presentacion) : '') + '</div>' +
+            '<div class="precio">' + moneda(p.precio) + '</div>' +
+            '<div id="ctrl-' + esc(p.id) + '">' + control(p) + '</div>' +
+          '</div>' +
+          '</div>';
+      }).join('') + '</div>';
+  }
+
+  // ------------------------------------------------------- Carrito
+  // Vive solo en la memoria de la página: no se guarda nada en el servidor.
+  // El pedido viaja como mensaje y tú lo confirmas, así que nada de esto
+  // toca tu hoja ni compromete inventario.
+  var carrito = {};   // id de artículo -> cantidad
+
+  function producto(id) {
+    var hallado = null;
+    datos.productos.forEach(function (p) { if (p.id === id) hallado = p; });
+    return hallado;
+  }
+
+  function piezas() {
+    var n = 0;
+    Object.keys(carrito).forEach(function (id) { n += carrito[id]; });
+    return n;
+  }
+
+  function total() {
+    var t = 0;
+    Object.keys(carrito).forEach(function (id) {
+      var p = producto(id);
+      if (p) t += p.precio * carrito[id];
+    });
+    return t;
+  }
+
+  // El control de cada tarjeta: botón para agregar, o el contador si ya está
+  // en el pedido. Los agotados no llevan botón, no se pueden pedir.
+  function control(p) {
+    if (!p.sePuedePedir) return '<div class="sin-boton">No disponible</div>';
+    var n = carrito[p.id] || 0;
+    if (!n) {
+      return '<button class="agregar" onclick="agregar(\'' + esc(p.id) + '\')">Agregar</button>';
+    }
+    // El + se apaga al llegar a lo que hay. El servidor lo revalida al
+    // guardar, porque entre que cargó la página y se envía puede haberse
+    // vendido alguna.
+    var tope = n >= p.maximo;
+    return '<div class="paso">' +
+      '<button onclick="cambiar(\'' + esc(p.id) + '\',-1)" aria-label="Quitar uno">−</button>' +
+      '<span class="cuenta">' + n + '</span>' +
+      '<button onclick="cambiar(\'' + esc(p.id) + '\',1)" aria-label="Agregar uno"' +
+        (tope ? ' disabled style="opacity:.35"' : '') + '>+</button>' +
+      '</div>' +
+      (tope ? '<div class="sin-boton" style="padding:3px 0">Es todo lo que hay</div>' : '');
+  }
+
+  function agregar(id) { cambiar(id, 1); }
+
+  function cambiar(id, delta) {
+    var p = producto(id);
+    if (!p || !p.sePuedePedir) return;
+    var n = (carrito[id] || 0) + delta;
+    if (n > p.maximo) n = p.maximo;      // nunca más de lo que hay
+    if (n <= 0) delete carrito[id]; else carrito[id] = n;
+    // Se repinta solo el control de esa tarjeta, no toda la cuadrícula: si
+    // se redibujara todo, la página brincaría de lugar en cada toque.
+    var caja = document.getElementById('ctrl-' + id);
+    if (caja) caja.innerHTML = control(p);
+    pintarBarra();
+    if (document.getElementById('telon').style.display !== 'none') pintarCarrito();
+  }
+
+  function pintarBarra() {
+    var n = piezas();
+    var barra = document.getElementById('barraCarrito');
+    barra.style.display = n ? '' : 'none';
+    document.body.className = n ? 'con-carrito' : '';
+    if (!n) { cerrarCarrito(); return; }
+    document.getElementById('carritoPiezas').textContent =
+      n + (n === 1 ? ' producto' : ' productos');
+    document.getElementById('carritoTotal').textContent = moneda(total());
+  }
+
+  function abrirCarrito() {
+    if (!piezas()) return;
+    pintarCarrito();
+    document.getElementById('telon').style.display = '';
+  }
+
+  function cerrarCarrito() {
+    document.getElementById('telon').style.display = 'none';
+    // El panel vuelve a su estado inicial: si no, tras un pedido enviado
+    // seguiría mostrando la confirmación la próxima vez que se abra.
+    document.getElementById('formulario').style.display = '';
+    document.getElementById('confirmacion').style.display = 'none';
+    document.getElementById('errorPedido').innerHTML = '';
+    var boton = document.getElementById('btnEnviar');
+    boton.disabled = false;
+    boton.textContent = 'Enviar pedido';
+  }
+
+  function pintarCarrito() {
+    document.getElementById('renglones').innerHTML = Object.keys(carrito).map(function (id) {
+      var p = producto(id);
+      if (!p) return '';
+      return '<div class="renglon">' +
+        '<div class="desc">' + esc(p.nombre) +
+          '<br><small>' + esc(p.marca) + (p.presentacion ? ' · ' + esc(p.presentacion) : '') +
+          ' · ' + moneda(p.precio) + ' c/u</small></div>' +
+        '<div class="paso" style="margin:0; width:96px">' +
+          '<button onclick="cambiar(\'' + esc(id) + '\',-1)">−</button>' +
+          '<span class="cuenta">' + carrito[id] + '</span>' +
+          '<button onclick="cambiar(\'' + esc(id) + '\',1)"' +
+            (carrito[id] >= p.maximo ? ' disabled style="opacity:.35"' : '') + '>+</button>' +
+        '</div>' +
+        '<div class="importe">' + moneda(p.precio * carrito[id]) + '</div>' +
+        '</div>';
+    }).join('');
+    document.getElementById('totales').innerHTML =
+      '<div class="renglon"><div class="desc"><b>Total estimado</b></div>' +
+      '<div class="importe">' + moneda(total()) + '</div></div>' +
+      '<div class="pie">No incluye envío. Te confirmamos existencia y el costo de entrega ' +
+      'cuando nos escribas.</div>';
+  }
+
+  // ------------------------------------------------- Enviar el pedido
+  // El pedido se cierra aquí: se guarda como solicitud y Eva la aprueba en
+  // su app. No se manda a WhatsApp ni a Instagram, y no se aparta nada del
+  // inventario hasta que ella lo convierte en pedido.
+
+  var enviando = false;
+
+  function enviarPedido() {
+    if (enviando || !piezas()) return;
+
+    var nombre = document.getElementById('f-nombre');
+    var whats = document.getElementById('f-whatsapp');
+    var insta = document.getElementById('f-instagram');
+    [nombre, whats, insta].forEach(function (c) { c.className = ''; });
+
+    var digitos = whats.value.replace(/\D/g, '');
+    var usuario = insta.value.replace(/@/g, '').trim();
+
+    if (nombre.value.trim().length < 3) {
+      return errorPedido('Escribe tu nombre para poder contactarte.', nombre);
+    }
+    if (!digitos && !usuario) {
+      return errorPedido('Déjanos tu WhatsApp o tu Instagram para confirmarte el pedido.', whats);
+    }
+    if (digitos && digitos.length < 10) {
+      return errorPedido('El WhatsApp debe llevar los 10 dígitos, con lada.', whats);
+    }
+
+    var lineas = Object.keys(carrito).map(function (id) {
+      return { id: id, cantidad: carrito[id] };
+    });
+
+    enviando = true;
+    var boton = document.getElementById('btnEnviar');
+    boton.disabled = true;
+    boton.textContent = 'Enviando…';
+    document.getElementById('errorPedido').innerHTML = '';
+
+    pedirDatos({
+      nombre: nombre.value,
+      whatsapp: digitos,
+      instagram: usuario,
+      lineas: lineas
+    }).then(function (r) {
+      enviando = false;
+      mostrarConfirmacion(r);
+    })['catch'](function (e) {
+      enviando = false;
+      boton.disabled = false;
+      boton.textContent = 'Enviar pedido';
+      // Si algo se agotó mientras decidía, el mensaje dice qué: hay que
+      // recargar el catálogo para que el contador refleje lo que queda.
+      errorPedido(e.message);
+      cargar();
+    });
+  }
+
+  function errorPedido(mensaje, campo) {
+    document.getElementById('errorPedido').innerHTML =
+      '<div class="error" style="margin:10px 0 0">' + esc(mensaje) + '</div>';
+    if (campo) { campo.className = 'mal'; campo.focus(); }
+  }
+
+  function mostrarConfirmacion(r) {
+    carrito = {};
+    pintarBarra();
+    // Se recarga el catálogo: lo que acaba de apartarse ya no debe aparecer
+    // disponible para quien siga navegando en este mismo teléfono.
+    cargar();
+    document.getElementById('formulario').style.display = 'none';
+    document.getElementById('renglones').innerHTML = '';
+    document.getElementById('totales').innerHTML = '';
+    var caja = document.getElementById('confirmacion');
+    caja.style.display = '';
+    caja.innerHTML =
+      '<div class="exito">' +
+      '<div style="font-weight:700; font-size:17px; color:var(--jade-oscuro)">¡Pedido recibido!</div>' +
+      '<div class="folio">' + esc(r.folio) + '</div>' +
+      '<div class="pie">Guarda ese número por si necesitas mencionarlo.</div>' +
+      '<p style="margin:12px 0 0; font-size:14px">Te escribimos pronto para confirmarte ' +
+        'existencia, el costo de envío y cómo pagar.</p>' +
+      '</div>' +
+      '<button class="enviar cerrar" onclick="cerrarCarrito()">Volver a la tienda</button>';
+  }
+
+  function pintarContacto() {
+    var saludo = 'Hola unni beauty, tengo una duda sobre un producto de su catálogo.';
+    document.getElementById('enlaceWa').href =
+      'https://wa.me/' + datos.whatsapp + '?text=' + encodeURIComponent(saludo);
+    document.getElementById('enlaceIg').href = 'https://ig.me/m/' + datos.instagram;
+    document.getElementById('contacto').style.display = '';
+    document.getElementById('pie').textContent =
+      'Precios en pesos mexicanos. La existencia se actualiza varias veces al día.';
+  }
+
+  cargar();
+</script>
+</body>
+</html>
