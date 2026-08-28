@@ -77,17 +77,45 @@
     background: var(--crema); padding: 10px 0 8px;
     border-bottom: 1px solid var(--linea);
   }
+  /* Todo el control en un renglón: buscar y filtrar. Antes eran tres filas
+     de opciones siempre abiertas, y se comían la pantalla antes del primer
+     producto. */
+  .linea-barra { display: flex; gap: 8px; align-items: center; }
+  .caja-busca { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; }
+  .caja-busca svg {
+    position: absolute; left: 12px; width: 17px; height: 17px;
+    color: var(--tenue); pointer-events: none;
+  }
   input[type=search] {
-    width: 100%; padding: 11px 14px; font-size: 15px;
-    border: 1px solid #C9BFB2; border-radius: 24px;
+    width: 100%; padding: 10px 14px 10px 36px; font-size: 15px;
+    border: 1px solid #C9BFB2; border-radius: 22px;
     background: #fff; color: var(--tinta); -webkit-appearance: none;
   }
   input[type=search]:focus { outline: 2px solid var(--jade); outline-offset: -1px; }
 
+  .boton-filtros {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+    padding: 10px 14px; font-size: 13.5px; font-weight: 700; font-family: inherit;
+    border: 1px solid var(--jade); border-radius: 22px;
+    background: transparent; color: var(--jade); cursor: pointer; white-space: nowrap;
+  }
+  .boton-filtros svg { width: 16px; height: 16px; }
+  .boton-filtros.abierto { background: var(--jade); color: #fff; }
+  .cuenta-filtros:not(:empty) {
+    min-width: 18px; padding: 0 5px; border-radius: 9px;
+    background: var(--jade); color: #fff; font-size: 11px; line-height: 18px; text-align: center;
+  }
+  .boton-filtros.abierto .cuenta-filtros:not(:empty) { background: #fff; color: var(--jade); }
+
   /* Solo el buscador y los filtros puestos se quedan pegados arriba. Las
      tres filas de opciones se van con el scroll: pegadas ocuparían medio
      teléfono y no quedaría pantalla para los productos. */
-  .filtros { margin-top: 12px; }
+  /* Va dentro de la barra pegajosa, así que se le pone tope de alto: abierto
+     no debe tapar la tienda entera. */
+  .filtros {
+    margin-top: 10px; max-height: 46vh; overflow-y: auto;
+    padding-bottom: 4px; border-top: 1px solid var(--linea); padding-top: 10px;
+  }
   .grupo + .grupo { margin-top: 10px; }
   .titulo-filtro {
     display: block; font-size: 11px; font-weight: 700; letter-spacing: .05em;
@@ -131,27 +159,30 @@
   }
   .marcas::-webkit-scrollbar { display: none; }
   .marca-tile {
-    flex: 0 0 auto; width: 64px; border: none; background: none; padding: 0;
+    flex: 0 0 auto; border: none; background: none; padding: 0;
     cursor: pointer; font-family: inherit;
   }
-  /* El marco del logo. Mientras no haya imagen, adentro va el nombre de la
-     marca: el hueco se ve intencional y la clienta igual sabe qué es. */
-  .marca-tile .aro {
-    width: 64px; height: 64px; border-radius: 50%;
+  /* Rectangular y no redondo: casi todos los logotipos de marca son
+     horizontales, y un círculo los estrangula. Es la forma de las fichas de
+     filtro, nada más un poco más alta para que quepa una imagen. */
+  .marca-tile .marco-logo {
+    width: 108px; height: 48px; border-radius: 12px;
     background: #fff; border: 1px solid var(--linea);
     display: flex; align-items: center; justify-content: center;
-    overflow: hidden; padding: 6px;
+    overflow: hidden; padding: 7px 9px;
   }
-  .marca-tile .aro img { width: 100%; height: 100%; object-fit: contain; }
-  .marca-tile .aro span {
-    font-size: 9.5px; font-weight: 700; line-height: 1.15;
+  .marca-tile .marco-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  /* Mientras no haya imagen, adentro va el nombre de la marca: el hueco se ve
+     intencional y la clienta igual sabe qué es. */
+  .marca-tile .marco-logo span {
+    font-size: 11.5px; font-weight: 700; line-height: 1.15;
     color: var(--tenue); text-align: center; word-break: break-word;
   }
   .marca-tile .rotulo-marca {
-    display: block; margin-top: 5px; font-size: 10.5px; line-height: 1.2;
+    display: block; margin-top: 4px; font-size: 10.5px; line-height: 1.2;
     color: var(--tenue); text-align: center;
   }
-  .marca-tile.activa .aro { border-color: var(--jade); border-width: 2px; padding: 5px; }
+  .marca-tile.activa .marco-logo { border-color: var(--jade); border-width: 2px; padding: 6px 8px; }
   .marca-tile.activa .rotulo-marca { color: var(--jade); font-weight: 700; }
 
   /* ------------------------------------------------------- Productos */
@@ -367,11 +398,26 @@
 
 <div class="envoltura">
   <div class="barra">
-    <input type="search" id="buscar" placeholder="Busca por producto o marca" oninput="pintar()">
+    <div class="linea-barra">
+      <div class="caja-busca">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>
+        </svg>
+        <input type="search" id="buscar" placeholder="Buscar" oninput="pintar()">
+      </div>
+      <button class="boton-filtros" id="botonFiltros" onclick="alternarFiltros()"
+              aria-expanded="false" aria-controls="filtros">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" aria-hidden="true">
+          <path d="M4 6h16"></path><path d="M7 12h10"></path><path d="M10 18h4"></path>
+        </svg>
+        <span>Filtrar</span><span class="cuenta-filtros" id="cuentaFiltros"></span>
+      </button>
+    </div>
     <div id="activos"></div>
-  </div>
 
-  <div class="filtros">
+  <div class="filtros" id="filtros" style="display:none">
     <div class="grupo">
       <span class="titulo-filtro">Categoría</span>
       <div class="fichas" id="categorias"></div>
@@ -384,6 +430,7 @@
       <span class="titulo-filtro">Marca</span>
       <div class="marcas" id="marcas"></div>
     </div>
+  </div>
   </div>
 
   <div id="conteo" class="conteo"></div>
@@ -460,6 +507,15 @@
     if (i >= 0) puestos[cual].splice(i, 1); else puestos[cual].push(valor);
     pintarFiltros();
     pintar();
+  }
+
+  function alternarFiltros() {
+    var panel = document.getElementById('filtros');
+    var boton = document.getElementById('botonFiltros');
+    var abierto = panel.style.display === 'none';
+    panel.style.display = abierto ? '' : 'none';
+    boton.className = 'boton-filtros' + (abierto ? ' abierto' : '');
+    boton.setAttribute('aria-expanded', abierto ? 'true' : 'false');
   }
 
   function limpiarFiltros() {
@@ -606,7 +662,7 @@
         return '<button class="marca-tile' + (esta('marca', m.nombre) ? ' activa' : '') + '" ' +
           'onclick="alternar(&quot;marca&quot;,' +
           JSON.stringify(m.nombre).replace(/"/g, '&quot;') + ')">' +
-          '<span class="aro">' + dentro + '</span>' +
+          '<span class="marco-logo">' + dentro + '</span>' +
           // El nombre debajo solo cuando el aro trae logo: si no, se leería
           // dos veces.
           (m.logo ? '<span class="rotulo-marca">' + esc(m.nombre) + '</span>' : '') +
@@ -621,6 +677,10 @@
     Object.keys(puestos).forEach(function (cual) {
       puestos[cual].forEach(function (v) { todos.push({ cual: cual, valor: v }); });
     });
+    // El número en el botón es lo que dice que hay filtros puestos cuando el
+    // panel está cerrado, que es casi siempre.
+    document.getElementById('cuentaFiltros').textContent = todos.length || '';
+
     var caja = document.getElementById('activos');
     if (!todos.length) { caja.innerHTML = ''; caja.className = ''; return; }
     caja.className = 'activos';
