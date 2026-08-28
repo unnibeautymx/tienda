@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>unnibeauty · tu ritual coreano, en todo México</title>
-<meta name="description" content="Skincare coreano original. Entrega en Mazatlán y envíos a todo México. Mira lo que hay, conoce cada producto y pide en línea.">
+<title>unnibeauty · skincare coreano</title>
+<meta name="description" content="Skincare coreano original, elegido con calma y explicado sin complicaciones. Filtra por tipo de piel, categoría y marca. Entrega en Mazatlán y envíos a todo México.">
 <meta name="theme-color" content="#3D7A62">
 <meta property="og:type" content="website">
 <meta property="og:title" content="unnibeauty">
-<meta property="og:description" content="Tu ritual coreano, en todo México. Mira lo que hay y pide en línea.">
+<meta property="og:description" content="Skincare coreano original, para que encuentres lo que tu piel necesita.">
 <meta property="og:image" content="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
 <link rel="icon" href="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
 <link rel="apple-touch-icon" href="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
@@ -27,6 +27,7 @@
     --jade-oscuro: #1C4A38;
     --crema: #FAF6F0;
     --rosa: #C47A8A;
+    --rojo: #A8202F;
     --linea: #E8E0D5;
     --tinta: #2B2A28;
     --tenue: #6B6257;
@@ -51,14 +52,24 @@
   .envoltura { max-width: 620px; margin: 0 auto; padding: 0 14px; }
 
   /* ------------------------------------------------------- Encabezado */
-  header { text-align: center; padding: 22px 14px 14px; }
-  header img { width: 84px; height: 84px; object-fit: contain; }
-  header h1 {
-    margin: 8px 0 2px; font-size: 24px; font-weight: 400;
-    font-family: var(--marca);
-    color: var(--jade-oscuro); letter-spacing: .01em;
+  header { text-align: center; padding: 24px 14px 14px; }
+  /* El logo YA trae el nombre escrito, así que repetirlo debajo lo decía dos
+     veces. Se quita el texto y el logo crece para hacer de rótulo. El círculo
+     es un recorte del marco cuadrado: la marca vive al centro y no se toca. */
+  header img {
+    width: 132px; height: 132px; object-fit: cover;
+    border-radius: 50%; display: block; margin: 0 auto;
   }
-  header p { margin: 0; font-size: 13px; color: var(--tenue); }
+  /* El título sigue existiendo para los lectores de pantalla y los buscadores,
+     que no pueden leer el nombre dentro de una imagen. */
+  .solo-lectores {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+  }
+  header p {
+    margin: 12px auto 0; max-width: 380px;
+    font-size: 13.5px; line-height: 1.5; color: var(--tenue); text-wrap: pretty;
+  }
 
   /* ------------------------------------------------------- Buscador */
   .barra {
@@ -73,19 +84,75 @@
   }
   input[type=search]:focus { outline: 2px solid var(--jade); outline-offset: -1px; }
 
-  .categorias {
-    display: flex; gap: 6px; overflow-x: auto; margin-top: 8px;
-    padding-bottom: 2px; -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+  /* Solo el buscador y los filtros puestos se quedan pegados arriba. Las
+     tres filas de opciones se van con el scroll: pegadas ocuparían medio
+     teléfono y no quedaría pantalla para los productos. */
+  .filtros { margin-top: 12px; }
+  .grupo + .grupo { margin-top: 10px; }
+  .titulo-filtro {
+    display: block; font-size: 11px; font-weight: 700; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--tenue); margin-bottom: 5px;
   }
-  .categorias::-webkit-scrollbar { display: none; }
-  .categorias button {
+  .fichas {
+    display: flex; gap: 6px; overflow-x: auto;
+    padding-bottom: 2px; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .fichas::-webkit-scrollbar { display: none; }
+  .fichas button {
     flex: 0 0 auto; padding: 6px 13px; font-size: 13px; font-weight: 600;
     border: 1px solid var(--jade); border-radius: 16px;
     background: transparent; color: var(--jade); cursor: pointer;
     white-space: nowrap;
   }
-  .categorias button.activa { background: var(--jade); color: #fff; }
+  .fichas button.activa { background: var(--jade); color: #fff; }
+
+  /* Lo que está puesto, siempre a la vista mientras se navega */
+  .activos {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    margin-top: 8px;
+  }
+  .activos .puesto {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 6px 4px 11px; border-radius: 14px;
+    background: var(--jade); color: #fff; font-size: 12px; font-weight: 600;
+    border: none; cursor: pointer; font-family: inherit;
+  }
+  .activos .puesto svg { opacity: .8; }
+  .activos .limpiar {
+    background: none; border: none; padding: 4px 6px; cursor: pointer;
+    color: var(--tenue); font-size: 12px; font-weight: 600;
+    text-decoration: underline; font-family: inherit;
+  }
+
+  /* --------------------------------------------------------- Marcas */
+  .marcas {
+    display: flex; gap: 12px; overflow-x: auto;
+    padding: 2px 0 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .marcas::-webkit-scrollbar { display: none; }
+  .marca-tile {
+    flex: 0 0 auto; width: 64px; border: none; background: none; padding: 0;
+    cursor: pointer; font-family: inherit;
+  }
+  /* El marco del logo. Mientras no haya imagen, adentro va el nombre de la
+     marca: el hueco se ve intencional y la clienta igual sabe qué es. */
+  .marca-tile .aro {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: #fff; border: 1px solid var(--linea);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; padding: 6px;
+  }
+  .marca-tile .aro img { width: 100%; height: 100%; object-fit: contain; }
+  .marca-tile .aro span {
+    font-size: 9.5px; font-weight: 700; line-height: 1.15;
+    color: var(--tenue); text-align: center; word-break: break-word;
+  }
+  .marca-tile .rotulo-marca {
+    display: block; margin-top: 5px; font-size: 10.5px; line-height: 1.2;
+    color: var(--tenue); text-align: center;
+  }
+  .marca-tile.activa .aro { border-color: var(--jade); border-width: 2px; padding: 5px; }
+  .marca-tile.activa .rotulo-marca { color: var(--jade); font-weight: 700; }
 
   /* ------------------------------------------------------- Productos */
   .conteo { font-size: 12px; color: var(--tenue); margin: 12px 0 8px; }
@@ -294,14 +361,29 @@
 
 <header>
   <img id="logo" alt="unnibeauty" src="">
-  <h1>unnibeauty</h1>
-  <p>tu ritual coreano, en todo México</p>
+  <h1 class="solo-lectores">unnibeauty</h1>
+  <p>skincare coreano original, elegido con calma y explicado sin complicaciones, para que encuentres lo que tu piel necesita</p>
 </header>
 
 <div class="envoltura">
   <div class="barra">
     <input type="search" id="buscar" placeholder="Busca por producto o marca" oninput="pintar()">
-    <div class="categorias" id="categorias"></div>
+    <div id="activos"></div>
+  </div>
+
+  <div class="filtros">
+    <div class="grupo">
+      <span class="titulo-filtro">Categoría</span>
+      <div class="fichas" id="categorias"></div>
+    </div>
+    <div class="grupo">
+      <span class="titulo-filtro">Tu tipo de piel</span>
+      <div class="fichas" id="pieles"></div>
+    </div>
+    <div class="grupo">
+      <span class="titulo-filtro">Marca</span>
+      <div class="marcas" id="marcas"></div>
+    </div>
   </div>
 
   <div id="conteo" class="conteo"></div>
@@ -344,7 +426,7 @@
              placeholder="10 dígitos, con lada">
       <label for="f-instagram">Tu Instagram <span class="opcional">opcional</span></label>
       <input type="text" id="f-instagram" placeholder="usuario, sin la arroba">
-      <p class="pie">Te escribimos para confirmarte existencia, el costo de envío y cómo pagar.</p>
+      <p class="pie">Te escribimos en un rato para confirmar todo contigo. Nada se cobra desde aquí.</p>
       <div id="errorPedido"></div>
       <button class="enviar wa" id="btnEnviar" onclick="enviarPedido()">Enviar pedido</button>
       <button class="enviar cerrar" onclick="cerrarCarrito()">Seguir viendo productos</button>
@@ -363,7 +445,28 @@
   var API = 'https://script.google.com/macros/s/AKfycbzF1PC5NZB9cGq4N2TkhBLUSwSuD2dHivbs6hgeAiBPs2b7SFScyDHg0MD2JI09tttf/exec';
 
   var datos = null;
-  var categoriaActiva = '';
+
+  // Los tres filtros son multiselección y viven en el mismo formato, así que
+  // se manejan con el mismo código. Dentro de un filtro las opciones suman
+  // (Limpieza O Sérum); entre filtros se restringen (Limpieza Y de ANUA).
+  var puestos = { categoria: [], piel: [], marca: [] };
+
+  var CAJA_FILTRO = { categoria: 'categorias', piel: 'pieles', marca: 'marcas' };
+
+  function esta(cual, valor) { return puestos[cual].indexOf(valor) >= 0; }
+
+  function alternar(cual, valor) {
+    var i = puestos[cual].indexOf(valor);
+    if (i >= 0) puestos[cual].splice(i, 1); else puestos[cual].push(valor);
+    pintarFiltros();
+    pintar();
+  }
+
+  function limpiarFiltros() {
+    puestos = { categoria: [], piel: [], marca: [] };
+    pintarFiltros();
+    pintar();
+  }
 
   function esc(t) {
     return String(t == null ? '' : t)
@@ -455,7 +558,7 @@
     pedirDatos(null).then(function (r) {
       datos = r;
       document.getElementById('logo').src = r.logo || '';
-      pintarCategorias();
+      pintarFiltros();
       pintarContacto();
       pintar();
       pintarBarra();
@@ -466,26 +569,81 @@
     });
   }
 
-  function pintarCategorias() {
-    var todas = [''].concat(datos.categorias);
-    document.getElementById('categorias').innerHTML = todas.map(function (c) {
-      return '<button class="' + (c === categoriaActiva ? 'activa' : '') + '" ' +
-        'onclick="elegirCategoria(' + JSON.stringify(c).replace(/"/g, '&quot;') + ')">' +
-        esc(c || 'Todo') + '</button>';
+  function pintarFiltros() {
+    pintarFichas('categoria', datos.categorias || []);
+    pintarFichas('piel', datos.pieles || []);
+    pintarMarcas();
+    pintarPuestos();
+  }
+
+  // Lo elegido se va al principio de su fila. En una fila que se desliza,
+  // buscar entre veinte opciones la que ya pusiste es justo lo que estorba.
+  function ordenadas(cual, opciones, nombreDe) {
+    return opciones.slice().sort(function (a, b) {
+      return (esta(cual, nombreDe(a)) ? 0 : 1) - (esta(cual, nombreDe(b)) ? 0 : 1);
+    });
+  }
+
+  function pintarFichas(cual, opciones) {
+    var caja = document.getElementById(CAJA_FILTRO[cual]);
+    if (!opciones.length) { caja.innerHTML = ''; return; }
+    caja.innerHTML = ordenadas(cual, opciones, function (o) { return o; }).map(function (o) {
+      return '<button class="' + (esta(cual, o) ? 'activa' : '') + '" ' +
+        'onclick="alternar(' + JSON.stringify(cual).replace(/"/g, '&quot;') + ',' +
+        JSON.stringify(o).replace(/"/g, '&quot;') + ')">' + esc(o) + '</button>';
     }).join('');
   }
 
-  function elegirCategoria(c) {
-    categoriaActiva = c;
-    pintarCategorias();
-    pintar();
+  function pintarMarcas() {
+    var caja = document.getElementById('marcas');
+    if (!datos.marcas || !datos.marcas.length) { caja.innerHTML = ''; return; }
+    caja.innerHTML = ordenadas('marca', datos.marcas, function (m) { return m.nombre; })
+      .map(function (m) {
+        var dentro = m.logo
+          ? '<img src="' + esc(m.logo) + '" alt="' + esc(m.nombre) + '" loading="lazy" ' +
+            'onerror="this.outerHTML=\'<span>' + esc(m.nombre) + '</span>\'">'
+          : '<span>' + esc(m.nombre) + '</span>';
+        return '<button class="marca-tile' + (esta('marca', m.nombre) ? ' activa' : '') + '" ' +
+          'onclick="alternar(&quot;marca&quot;,' +
+          JSON.stringify(m.nombre).replace(/"/g, '&quot;') + ')">' +
+          '<span class="aro">' + dentro + '</span>' +
+          // El nombre debajo solo cuando el aro trae logo: si no, se leería
+          // dos veces.
+          (m.logo ? '<span class="rotulo-marca">' + esc(m.nombre) + '</span>' : '') +
+          '</button>';
+      }).join('');
+  }
+
+  // Los filtros puestos viajan pegados arriba mientras se navega, con su
+  // tacha para quitarlos sin tener que volver a subir.
+  function pintarPuestos() {
+    var todos = [];
+    Object.keys(puestos).forEach(function (cual) {
+      puestos[cual].forEach(function (v) { todos.push({ cual: cual, valor: v }); });
+    });
+    var caja = document.getElementById('activos');
+    if (!todos.length) { caja.innerHTML = ''; caja.className = ''; return; }
+    caja.className = 'activos';
+    caja.innerHTML = todos.map(function (f) {
+      return '<button class="puesto" onclick="alternar(' +
+        JSON.stringify(f.cual).replace(/"/g, '&quot;') + ',' +
+        JSON.stringify(f.valor).replace(/"/g, '&quot;') + ')">' + esc(f.valor) +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+          'stroke-width="2.6" stroke-linecap="round" aria-hidden="true">' +
+          '<path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></button>';
+    }).join('') +
+      (todos.length > 1 ? '<button class="limpiar" onclick="limpiarFiltros()">Quitar todos</button>' : '');
   }
 
   function pintar() {
     if (!datos) return;
     var q = sinAcentos(document.getElementById('buscar').value.trim());
     var visibles = datos.productos.filter(function (p) {
-      if (categoriaActiva && p.tipo !== categoriaActiva) return false;
+      // Dentro de cada filtro basta con que coincida una opción; entre
+      // filtros tienen que coincidir todos.
+      if (puestos.categoria.length && !esta('categoria', p.tipo)) return false;
+      if (puestos.marca.length && !esta('marca', p.marca)) return false;
+      if (puestos.piel.length && !p.pieles.some(function (n) { return esta('piel', n); })) return false;
       if (q && sinAcentos(p.nombre + ' ' + p.marca + ' ' + p.presentacion).indexOf(q) < 0) return false;
       return true;
     });
@@ -498,8 +656,11 @@
 
     if (!visibles.length) {
       document.getElementById('lista').innerHTML =
-        '<div class="aviso">No encontramos nada con esa búsqueda.<br>' +
-        'Escríbenos y te ayudamos a buscarlo.</div>';
+        '<div class="aviso">' +
+        (puestos.categoria.length || puestos.marca.length || puestos.piel.length
+          ? 'No hay nada con esos filtros.<br>Prueba quitando uno.'
+          : 'No encontramos nada con esa búsqueda.<br>Escríbenos y te ayudamos a buscarlo.') +
+        '</div>';
       return;
     }
 
@@ -800,8 +961,9 @@
       '<div style="font-weight:700; font-size:17px; color:var(--jade-oscuro)">¡Pedido recibido!</div>' +
       '<div class="folio">' + esc(r.folio) + '</div>' +
       '<div class="pie">Guarda ese número por si necesitas mencionarlo.</div>' +
-      '<p style="margin:12px 0 0; font-size:14px">Te escribimos pronto para confirmarte ' +
-        'existencia, el costo de envío y cómo pagar.</p>' +
+      '<p style="margin:12px 0 0; font-size:14px; line-height:1.5">En un rato te escribimos ' +
+        'para confirmarte tu pedido y ponernos de acuerdo en la entrega y el pago. ' +
+        'Y si tienes dudas de cómo usar algo, ahí mismo te orientamos.</p>' +
       '</div>' +
       '<button class="enviar cerrar" onclick="cerrarCarrito()">Volver a la tienda</button>';
   }
