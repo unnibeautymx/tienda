@@ -341,7 +341,15 @@
    * página la sirve GitHub. Por eso desaparece el enredo de cuentas de
    * Google, esta petición viaja sin sesión de nadie.
    */
+  /**
+   * Habla con el Apps Script. Los errores se distinguen por capa a propósito:
+   * "no cargó" puede ser la URL sin pegar, el script sin republicar o la red,
+   * y son arreglos distintos. Un mensaje genérico obliga a adivinar.
+   */
   function pedirDatos(cuerpo) {
+    if (API.indexOf('PEGA_AQUI') >= 0) {
+      return Promise.reject(new Error('FALTA_URL'));
+    }
     var opciones = cuerpo
       // Texto plano y no JSON a propósito: con Content-Type de JSON el
       // navegador manda antes una petición de permiso que Apps Script no
@@ -350,12 +358,47 @@
           headers: { 'Content-Type': 'text/plain;charset=utf-8' } }
       : { method: 'GET' };
     var url = API + (cuerpo ? '' : (API.indexOf('?') < 0 ? '?' : '&') + 'api=1');
+
     return fetch(url, opciones)
-      .then(function (r) { return r.json(); })
-      .then(function (r) {
+      .then(function (r) { return r.text(); }, function () {
+        throw new Error('SIN_CONTACTO');
+      })
+      .then(function (texto) {
+        var r;
+        try { r = JSON.parse(texto); }
+        catch (e) {
+          // Contestó algo que no es JSON. Si empieza con "<" es HTML: el
+          // Apps Script sigue sirviendo la página vieja porque no se ha
+          // publicado la versión con el servicio de datos.
+          throw new Error(texto.trim().charAt(0) === '<' ? 'SIN_PUBLICAR' : 'RESPUESTA_RARA');
+        }
         if (!r.ok) throw new Error(r.error || 'Algo salió mal.');
         return r.datos;
       });
+  }
+
+  // Traduce las fallas de conexión a algo accionable. Los errores del
+  // servidor (stock, validaciones) pasan tal cual: ésos ya vienen claros.
+  function explicar(e) {
+    var m = e && e.message;
+    if (m === 'FALTA_URL') {
+      return 'Falta pegar la URL del Apps Script en el archivo index.html, ' +
+        'en la línea que dice var API.';
+    }
+    if (m === 'SIN_CONTACTO') {
+      return 'No se pudo contactar al servidor. Revisa que la URL del Apps Script ' +
+        'sea la que termina en /exec, y que esté publicada con acceso ' +
+        '"Cualquier persona".';
+    }
+    if (m === 'SIN_PUBLICAR') {
+      return 'El Apps Script está contestando la página vieja en lugar de los datos. ' +
+        'Publica una nueva versión con el archivo 02_WebApp.gs actualizado.';
+    }
+    if (m === 'RESPUESTA_RARA') {
+      return 'El servidor contestó algo inesperado. Abre tu URL con ?api=1 al final ' +
+        'en el navegador para ver qué responde.';
+    }
+    return m || 'Algo salió mal.';
   }
 
   function cargar() {
@@ -368,8 +411,8 @@
       pintarBarra();
     })['catch'](function (e) {
       document.getElementById('lista').innerHTML =
-        '<div class="error">No pudimos cargar el catálogo en este momento. ' +
-        'Vuelve a intentar en un minuto.<br><br>' + esc(e.message) + '</div>';
+        '<div class="error"><b>No pudimos cargar el catálogo.</b><br><br>' +
+        esc(explicar(e)) + '</div>';
     });
   }
 
@@ -602,7 +645,7 @@
       boton.textContent = 'Enviar pedido';
       // Si algo se agotó mientras decidía, el mensaje dice qué: hay que
       // recargar el catálogo para que el contador refleje lo que queda.
-      errorPedido(e.message);
+      errorPedido(explicar(e));
       cargar();
     });
   }
