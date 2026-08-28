@@ -13,7 +13,14 @@
 <link rel="icon" href="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
 <link rel="apple-touch-icon" href="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <style>
+
+  /* Righteous es la fuente del logotipo: se rescata para el nombre de la
+     tienda y para los precios. No tiene negritas de verdad, así que donde se
+     usa el peso se deja en normal para no pedirle al navegador una falsa. */
+  @import url('https://fonts.googleapis.com/css2?family=Righteous&display=swap');
 
   :root {
     --jade: #3D7A62;
@@ -29,6 +36,7 @@
     --pocas: #8F6714;
     --camino: #2C6E9B;
     --agotado: #615D59;
+    --marca: 'Righteous', 'Avenir Next', 'Trebuchet MS', sans-serif;
   }
   * { box-sizing: border-box; }
   body {
@@ -46,7 +54,8 @@
   header { text-align: center; padding: 22px 14px 14px; }
   header img { width: 84px; height: 84px; object-fit: contain; }
   header h1 {
-    margin: 8px 0 2px; font-size: 21px; font-weight: 700;
+    margin: 8px 0 2px; font-size: 24px; font-weight: 400;
+    font-family: var(--marca);
     color: var(--jade-oscuro); letter-spacing: .01em;
   }
   header p { margin: 0; font-size: 13px; color: var(--tenue); }
@@ -114,7 +123,8 @@
   .marca { font-size: 11.5px; color: var(--tenue); }
   .precio {
     margin-top: auto; padding-top: 5px;
-    font-size: 15px; font-weight: 700; color: var(--jade-oscuro);
+    font-family: var(--marca); font-size: 16px; font-weight: 400;
+    color: var(--rojo);
   }
   .chip.hay { background: var(--hay); }
   .chip.pocas { background: var(--pocas); }
@@ -149,7 +159,7 @@
   }
   .barra-carrito .resumen { flex: 1; min-width: 0; line-height: 1.25; }
   .barra-carrito .resumen small { opacity: .82; font-size: 11.5px; }
-  .barra-carrito .resumen b { font-size: 17px; }
+  .barra-carrito .resumen b { font-family: var(--marca); font-weight: 400; font-size: 18px; }
   .barra-carrito button {
     flex: 0 0 auto; padding: 11px 18px; font-size: 14px; font-weight: 700;
     border: none; border-radius: 22px; background: #fff; color: var(--jade-oscuro);
@@ -214,6 +224,22 @@
 
   /* --------------------------------------------------- Ficha */
   .producto .datos { cursor: pointer; }
+  /* La tacha se queda pegada arriba al hacer scroll: en una ficha larga,
+     una que se fuera con la foto obligaría a subir hasta el tope para salir. */
+  .cerrar-ficha {
+    position: sticky; top: -16px; z-index: 2;
+    display: flex; justify-content: flex-end;
+    margin: -16px -14px 0; padding: 10px 14px 6px;
+    background: linear-gradient(var(--crema) 72%, rgba(250,246,240,0));
+  }
+  .cerrar-ficha button {
+    width: 34px; height: 34px; padding: 0; flex: 0 0 auto;
+    border: 1px solid var(--linea); border-radius: 50%;
+    background: #fff; color: var(--tenue);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .cerrar-ficha button:active { background: var(--linea); }
   .ficha-foto {
     width: 100%; aspect-ratio: 1 / 1; background: #F1EAE0;
     border-radius: 10px; overflow: hidden;
@@ -223,7 +249,8 @@
   .ficha h2 { margin: 12px 0 2px; font-size: 18px; color: var(--jade-oscuro); line-height: 1.3; }
   .ficha .submarca { font-size: 13px; color: var(--tenue); }
   .ficha .precio-grande {
-    font-size: 22px; font-weight: 700; color: var(--jade-oscuro); margin: 10px 0 4px;
+    font-family: var(--marca); font-size: 25px; font-weight: 400;
+    color: var(--rojo); margin: 10px 0 4px;
   }
   .ficha .descripcion { font-size: 14px; line-height: 1.5; margin: 12px 0 0; }
   .advertencia {
@@ -483,7 +510,7 @@
         var foto = p.foto
           ? '<img src="' + esc(p.foto) + '" alt="' + esc(p.nombre) + '" loading="lazy" ' +
             'onerror="this.style.display=\'none\'">'
-          : '<span class="marca-agua">unni beauty</span>';
+          : '<span class="marca-agua">unnibeauty</span>';
         return '<div class="producto' + (p.sePuedePedir ? '' : ' sin-existencia') + '">' +
           '<div class="foto">' + foto +
             '<span class="chip ' + claseChip(p.estado) + '">' + esc(p.estado) + '</span>' +
@@ -520,6 +547,13 @@
     }).join('');
 
     document.getElementById('ficha').innerHTML =
+      '<div class="cerrar-ficha">' +
+        '<button onclick="cerrarFicha()" aria-label="Cerrar">' +
+          '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+            'stroke-width="2.2" stroke-linecap="round" aria-hidden="true">' +
+            '<path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>' +
+        '</button>' +
+      '</div>' +
       '<div class="ficha-foto">' +
         (p.foto
           ? '<img src="' + esc(p.foto) + '" alt="' + esc(p.nombre) + '" ' +
@@ -773,7 +807,7 @@
   }
 
   function pintarContacto() {
-    var saludo = 'Hola unni beauty, tengo una duda sobre un producto de su catálogo.';
+    var saludo = 'Hola unnibeauty, tengo una duda sobre un producto de su catálogo.';
     document.getElementById('enlaceWa').href =
       'https://wa.me/' + datos.whatsapp + '?text=' + encodeURIComponent(saludo);
     document.getElementById('enlaceIg').href = 'https://ig.me/m/' + datos.instagram;
