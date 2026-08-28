@@ -303,6 +303,11 @@
     color: var(--jade-oscuro); margin: 10px 0 3px;
   }
   #formulario .opcional { font-weight: 400; color: var(--tenue); }
+  #formulario select {
+    width: 100%; padding: 11px 12px; font-size: 15px;
+    border: 1px solid #C9BFB2; border-radius: 8px; background: #fff;
+    color: var(--tinta); font-family: inherit;
+  }
   #formulario input {
     width: 100%; padding: 11px 12px; font-size: 15px;
     border: 1px solid #C9BFB2; border-radius: 8px; background: #fff;
@@ -473,7 +478,20 @@
              placeholder="10 dígitos, con lada">
       <label for="f-instagram">Tu Instagram <span class="opcional">opcional</span></label>
       <input type="text" id="f-instagram" placeholder="usuario, sin la arroba">
-      <p class="pie">Te escribimos en un rato para confirmar todo contigo. Nada se cobra desde aquí.</p>
+
+      <label for="f-entrega">¿Cómo lo quieres recibir?</label>
+      <select id="f-entrega" onchange="pintarEntrega()"></select>
+      <div id="zonaDireccion" style="display:none">
+        <label for="f-direccion">Tu dirección</label>
+        <input type="text" id="f-direccion" autocomplete="street-address"
+               placeholder="calle, número, colonia y referencias">
+      </div>
+      <p class="pie" id="notaEntrega"></p>
+
+      <label for="f-pago">¿Cómo prefieres pagar?</label>
+      <select id="f-pago"></select>
+      <p class="pie">Te compartimos los datos para pagar cuando te escribamos.
+        Nada se cobra desde aquí.</p>
       <div id="errorPedido"></div>
       <button class="enviar wa" id="btnEnviar" onclick="enviarPedido()">Enviar pedido</button>
       <button class="enviar cerrar" onclick="cerrarCarrito()">Seguir viendo productos</button>
@@ -901,9 +919,38 @@
     document.getElementById('carritoTotal').textContent = moneda(total());
   }
 
+  // Las opciones de entrega y pago se llenan del servidor, no se escriben en
+  // la página: así unni beauty cambia lo que ofrece sin volver a publicar.
+  function pintarOpcionesPedido() {
+    document.getElementById('f-entrega').innerHTML =
+      '<option value="">elige una…</option>' +
+      datos.entregas.map(function (e) {
+        return '<option>' + esc(e.valor) + '</option>';
+      }).join('');
+    document.getElementById('f-pago').innerHTML =
+      '<option value="">elige una…</option>' +
+      datos.pagos.map(function (p) { return '<option>' + esc(p) + '</option>'; }).join('');
+    pintarEntrega();
+  }
+
+  // La dirección solo aparece donde hace falta. Pedirla para un punto de
+  // entrega sería una barrera de más, y ahí lo que se comparte es la nuestra.
+  function pintarEntrega() {
+    var elegida = document.getElementById('f-entrega').value;
+    var opcion = null;
+    datos.entregas.forEach(function (e) { if (e.valor === elegida) opcion = e; });
+    document.getElementById('zonaDireccion').style.display =
+      opcion && opcion.pideDireccion ? '' : 'none';
+    document.getElementById('notaEntrega').textContent = !opcion ? ''
+      : opcion.pideDireccion
+        ? 'El costo de la entrega te lo confirmamos junto con tu pedido.'
+        : 'Te compartimos la dirección del punto en cuanto se confirme el pago.';
+  }
+
   function abrirCarrito() {
     if (!piezas()) return;
     cerrarFicha();
+    pintarOpcionesPedido();
     pintarCarrito();
     document.getElementById('telon').style.display = '';
   }
@@ -940,8 +987,8 @@
     document.getElementById('totales').innerHTML =
       '<div class="renglon"><div class="desc"><b>Total estimado</b></div>' +
       '<div class="importe">' + moneda(total()) + '</div></div>' +
-      '<div class="pie">No incluye envío. Te confirmamos existencia y el costo de entrega ' +
-      'cuando nos escribas.</div>';
+      '<div class="pie">Todavía sin el costo de entrega: eso depende de a dónde va, ' +
+      'y te lo confirmamos junto con tu pedido.</div>';
   }
 
   // ------------------------------------------------- Enviar el pedido
@@ -957,7 +1004,10 @@
     var nombre = document.getElementById('f-nombre');
     var whats = document.getElementById('f-whatsapp');
     var insta = document.getElementById('f-instagram');
-    [nombre, whats, insta].forEach(function (c) { c.className = ''; });
+    var entrega = document.getElementById('f-entrega');
+    var direccion = document.getElementById('f-direccion');
+    var pago = document.getElementById('f-pago');
+    [nombre, whats, insta, entrega, direccion, pago].forEach(function (c) { c.className = ''; });
 
     var digitos = whats.value.replace(/\D/g, '');
     var usuario = insta.value.replace(/@/g, '').trim();
@@ -970,6 +1020,19 @@
     }
     if (digitos && digitos.length < 10) {
       return errorPedido('El WhatsApp debe llevar los 10 dígitos, con lada.', whats);
+    }
+    if (!entrega.value) {
+      return errorPedido('Dinos cómo quieres recibir tu pedido.', entrega);
+    }
+    var pideDireccion = false;
+    datos.entregas.forEach(function (e) {
+      if (e.valor === entrega.value) pideDireccion = e.pideDireccion;
+    });
+    if (pideDireccion && direccion.value.trim().length < 10) {
+      return errorPedido('Escribe tu dirección con calle, número y colonia para poder llegar.', direccion);
+    }
+    if (!pago.value) {
+      return errorPedido('Dinos cómo prefieres pagar.', pago);
     }
 
     var lineas = Object.keys(carrito).map(function (id) {
@@ -986,6 +1049,9 @@
       nombre: nombre.value,
       whatsapp: digitos,
       instagram: usuario,
+      entrega: entrega.value,
+      direccion: pideDireccion ? direccion.value : '',
+      pago: pago.value,
       lineas: lineas
     }).then(function (r) {
       enviando = false;
@@ -1022,8 +1088,11 @@
       '<div class="folio">' + esc(r.folio) + '</div>' +
       '<div class="pie">Guarda ese número por si necesitas mencionarlo.</div>' +
       '<p style="margin:12px 0 0; font-size:14px; line-height:1.5">En un rato te escribimos ' +
-        'para confirmarte tu pedido y ponernos de acuerdo en la entrega y el pago. ' +
-        'Y si tienes dudas de cómo usar algo, ahí mismo te orientamos.</p>' +
+        'para confirmarte tu pedido, pasarte los datos para pagar y ' +
+        (r.pideDireccion
+          ? 'decirte el costo de la entrega'
+          : 'compartirte la dirección del punto de entrega') +
+        '. Y si tienes dudas de cómo usar algo, ahí mismo te orientamos.</p>' +
       '</div>' +
       '<button class="enviar cerrar" onclick="cerrarCarrito()">Volver a la tienda</button>';
   }
