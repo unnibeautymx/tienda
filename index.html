@@ -438,7 +438,6 @@
   </div>
   </div>
 
-  <div id="conteo" class="conteo"></div>
   <div id="lista"><div class="cargando">Cargando el catálogo…</div></div>
   <noscript><div class="aviso">Activa JavaScript para ver el catálogo.</div></noscript>
 
@@ -632,6 +631,7 @@
     pedirDatos(null).then(function (r) {
       datos = r;
       document.getElementById('logo').src = r.logo || '';
+      recuperarCarrito();
       pintarFiltros();
       pintarContacto();
       pintar();
@@ -725,12 +725,6 @@
       if (q && sinAcentos(p.nombre + ' ' + p.marca + ' ' + p.presentacion).indexOf(q) < 0) return false;
       return true;
     });
-
-    var hay = visibles.filter(function (p) { return p.sePuedePedir; }).length;
-    document.getElementById('conteo').textContent = visibles.length
-      ? visibles.length + (visibles.length === 1 ? ' producto' : ' productos') +
-        (hay < visibles.length ? ' · ' + hay + ' con existencia' : '')
-      : '';
 
     if (!visibles.length) {
       document.getElementById('lista').innerHTML =
@@ -845,6 +839,46 @@
   // toca tu hoja ni compromete inventario.
   var carrito = {};   // id de artículo -> cantidad
 
+  // Mientras se enseña el "¡Pedido recibido!", el panel no se cierra solo.
+  // Sin esto, vaciar el carrito al enviar disparaba el cierre automático y la
+  // confirmación se escribía en una ventana que ya no estaba a la vista.
+  var confirmando = false;
+
+  /**
+   * El carrito sobrevive a una recarga. No es lujo: en el navegador de
+   * Instagram basta un mal deslizón para recargar, y perder un pedido a medio
+   * armar es de las cosas que hacen que alguien ya no lo vuelva a intentar.
+   *
+   * Vive solo en ese teléfono y no viaja a ningún lado. Todo va envuelto en
+   * try porque hay navegadores en modo privado donde guardar truena, y ahí
+   * vale más una tienda sin memoria que una tienda rota.
+   */
+  var LLAVE_CARRITO = 'unnibeauty_pedido';
+
+  function guardarCarrito() {
+    try { localStorage.setItem(LLAVE_CARRITO, JSON.stringify(carrito)); }
+    catch (e) { /* sin memoria: la tienda funciona igual */ }
+  }
+
+  function recuperarCarrito() {
+    var guardado;
+    try { guardado = JSON.parse(localStorage.getItem(LLAVE_CARRITO) || '{}'); }
+    catch (e) { return; }
+    if (!guardado || typeof guardado !== 'object') return;
+
+    // Se revalida contra el catálogo recién cargado: en el rato que pasó, algo
+    // pudo agotarse, subir de precio o dejar de venderse. Nunca se restaura a
+    // ciegas lo que estaba guardado.
+    carrito = {};
+    Object.keys(guardado).forEach(function (id) {
+      var p = producto(id);
+      var n = Math.floor(Number(guardado[id]));
+      if (!p || !p.sePuedePedir || !(n > 0)) return;
+      carrito[id] = Math.min(n, p.maximo);
+    });
+    guardarCarrito();
+  }
+
   function producto(id) {
     var hallado = null;
     datos.productos.forEach(function (p) { if (p.id === id) hallado = p; });
@@ -895,6 +929,7 @@
     var n = (carrito[id] || 0) + delta;
     if (n > p.maximo) n = p.maximo;      // nunca más de lo que hay
     if (n <= 0) delete carrito[id]; else carrito[id] = n;
+    guardarCarrito();
     // Se repinta solo el control de esa tarjeta, no toda la cuadrícula: si
     // se redibujara todo, la página brincaría de lugar en cada toque.
     var caja = document.getElementById('ctrl-' + id);
@@ -913,7 +948,7 @@
     var barra = document.getElementById('barraCarrito');
     barra.style.display = n ? '' : 'none';
     document.body.className = n ? 'con-carrito' : '';
-    if (!n) { cerrarCarrito(); return; }
+    if (!n) { if (!confirmando) cerrarCarrito(); return; }
     document.getElementById('carritoPiezas').textContent =
       n + (n === 1 ? ' producto' : ' productos');
     document.getElementById('carritoTotal').textContent = moneda(total());
@@ -956,6 +991,7 @@
   }
 
   function cerrarCarrito() {
+    confirmando = false;
     document.getElementById('telon').style.display = 'none';
     // El panel vuelve a su estado inicial: si no, tras un pedido enviado
     // seguiría mostrando la confirmación la próxima vez que se abra.
@@ -1072,7 +1108,9 @@
   }
 
   function mostrarConfirmacion(r) {
+    confirmando = true;
     carrito = {};
+    guardarCarrito();
     pintarBarra();
     // Se recarga el catálogo: lo que acaba de apartarse ya no debe aparecer
     // disponible para quien siga navegando en este mismo teléfono.
@@ -1093,6 +1131,7 @@
           ? 'decirte el costo de la entrega'
           : 'compartirte la dirección del punto de entrega') +
         '. Y si tienes dudas de cómo usar algo, ahí mismo te orientamos.</p>' +
+      '<p class="pie" style="margin:10px 0 0">Nada se cobró desde aquí.</p>' +
       '</div>' +
       '<button class="enviar cerrar" onclick="cerrarCarrito()">Volver a la tienda</button>';
   }
