@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>unnibeauty · tu ritual coreano, en Mazatlán</title>
-<meta name="description" content="Skincare coreano original en Mazatlán. Mira lo que hay, conoce cada producto y haz tu pedido en línea.">
+<title>unnibeauty · tu ritual coreano, en todo México</title>
+<meta name="description" content="Skincare coreano original. Entrega en Mazatlán y envíos a todo México. Mira lo que hay, conoce cada producto y pide en línea.">
 <meta name="theme-color" content="#3D7A62">
 <meta property="og:type" content="website">
 <meta property="og:title" content="unnibeauty">
-<meta property="og:description" content="Tu ritual coreano, en Mazatlán. Mira lo que hay y pide en línea.">
+<meta property="og:description" content="Tu ritual coreano, en todo México. Mira lo que hay y pide en línea.">
 <meta property="og:image" content="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
 <link rel="icon" href="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
 <link rel="apple-touch-icon" href="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
@@ -268,7 +268,7 @@
 <header>
   <img id="logo" alt="unnibeauty" src="">
   <h1>unnibeauty</h1>
-  <p>tu ritual coreano, en Mazatlán</p>
+  <p>tu ritual coreano, en todo México</p>
 </header>
 
 <div class="envoltura">
@@ -282,7 +282,7 @@
   <noscript><div class="aviso">Activa JavaScript para ver el catálogo.</div></noscript>
 
   <div class="contacto" id="contacto" style="display:none">
-    <p>¿Dudas sobre un producto? Escríbenos.</p>
+    <p>¿Dudas sobre un producto o sobre tu envío? Escríbenos.</p>
     <a class="wa" id="enlaceWa" target="_blank" rel="noopener">Escribir por WhatsApp</a>
     <a class="ig" id="enlaceIg" target="_blank" rel="noopener">Escribir por Instagram</a>
   </div>
@@ -778,7 +778,8 @@
       'https://wa.me/' + datos.whatsapp + '?text=' + encodeURIComponent(saludo);
     document.getElementById('enlaceIg').href = 'https://ig.me/m/' + datos.instagram;
     document.getElementById('contacto').style.display = '';
-    document.getElementById('pie').textContent = 'Precios en pesos mexicanos.';
+    document.getElementById('pie').textContent =
+      'Entrega en Mazatlán y envíos a todo México. Precios en pesos mexicanos.';
   }
 
   cargar();
