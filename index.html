@@ -3,21 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>unni beauty · skincare coreano en Mazatlán</title>
-<meta name="description" content="Skincare coreano original en Mazatlán. Consulta existencia, precios y haz tu pedido en línea.">
+<title>unnibeauty · tu ritual coreano, en Mazatlán</title>
+<meta name="description" content="Skincare coreano original en Mazatlán. Mira lo que hay, conoce cada producto y haz tu pedido en línea.">
 <meta name="theme-color" content="#3D7A62">
-
-<!-- Cómo se ve al compartir el enlace por WhatsApp o Instagram -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="unni beauty">
-<meta property="og:description" content="Skincare coreano en Mazatlán. Mira lo que hay y pide en línea.">
+<meta property="og:title" content="unnibeauty">
+<meta property="og:description" content="Tu ritual coreano, en Mazatlán. Mira lo que hay y pide en línea.">
 <meta property="og:image" content="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
-
-<!-- El ícono que Apps Script no dejaba poner -->
 <link rel="icon" href="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
 <link rel="apple-touch-icon" href="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
 <link rel="manifest" href="manifest.json">
-
 <style>
 
   :root {
@@ -217,6 +212,35 @@
     font-weight: 700; letter-spacing: .04em;
   }
 
+  /* --------------------------------------------------- Ficha */
+  .producto .datos { cursor: pointer; }
+  .ficha-foto {
+    width: 100%; aspect-ratio: 1 / 1; background: #F1EAE0;
+    border-radius: 10px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ficha-foto img { width: 100%; height: 100%; object-fit: cover; }
+  .ficha h2 { margin: 12px 0 2px; font-size: 18px; color: var(--jade-oscuro); line-height: 1.3; }
+  .ficha .submarca { font-size: 13px; color: var(--tenue); }
+  .ficha .precio-grande {
+    font-size: 22px; font-weight: 700; color: var(--jade-oscuro); margin: 10px 0 4px;
+  }
+  .ficha .descripcion { font-size: 14px; line-height: 1.5; margin: 12px 0 0; }
+  .advertencia {
+    display: flex; gap: 9px; align-items: flex-start;
+    margin: 12px 0 0; padding: 10px 12px;
+    background: #F6DBDE; border-radius: 8px;
+    font-size: 13px; line-height: 1.45; color: #8B1A26;
+  }
+  .advertencia svg { flex: 0 0 auto; margin-top: 1px; }
+  .atributos { margin: 14px 0 0; border-top: 1px solid var(--linea); }
+  .atributos div {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 8px 0; border-bottom: 1px solid var(--linea); font-size: 13.5px;
+  }
+  .atributos dt { color: var(--tenue); }
+  .atributos dd { margin: 0; text-align: right; font-weight: 600; }
+
   .aviso, .cargando, .error {
     padding: 16px; border-radius: 10px; margin: 14px 0;
     font-size: 14px; text-align: center;
@@ -242,9 +266,9 @@
 
 
 <header>
-  <img id="logo" alt="unni beauty" src="">
-  <h1>unni beauty</h1>
-  <p>skincare coreano en Mazatlán</p>
+  <img id="logo" alt="unnibeauty" src="">
+  <h1>unnibeauty</h1>
+  <p>tu ritual coreano, en Mazatlán</p>
 </header>
 
 <div class="envoltura">
@@ -272,6 +296,10 @@
     <b id="carritoTotal"></b>
   </div>
   <button onclick="abrirCarrito()">Ver pedido</button>
+</div>
+
+<div class="telon" id="telonFicha" style="display:none" onclick="if(event.target===this) cerrarFicha()">
+  <div class="panel ficha" id="ficha"></div>
 </div>
 
 <div class="telon" id="telon" style="display:none" onclick="if(event.target===this) cerrarCarrito()">
@@ -302,8 +330,8 @@
 
 <script>
   /* ------------------------------------------------------------------
-   * PEGA AQUÍ LA URL DE TU APPS SCRIPT, la que termina en /exec.
-   * Es la misma que ya tienes publicada. No lleva /u/0/ ni nada después.
+   * URL del Apps Script que sirve los datos. VERIFÍCALA si creaste una
+   * implementación NUEVA en vez de actualizar la de siempre.
    * ------------------------------------------------------------------ */
   var API = 'https://script.google.com/macros/s/AKfycbzF1PC5NZB9cGq4N2TkhBLUSwSuD2dHivbs6hgeAiBPs2b7SFScyDHg0MD2JI09tttf/exec';
 
@@ -336,11 +364,6 @@
     return 'pocas';
   }
 
-  /**
-   * Habla con el Apps Script, que aquí es solo un servicio de datos: la
-   * página la sirve GitHub. Por eso desaparece el enredo de cuentas de
-   * Google, esta petición viaja sin sesión de nadie.
-   */
   /**
    * Habla con el Apps Script. Los errores se distinguen por capa a propósito:
    * "no cargó" puede ser la URL sin pegar, el script sin republicar o la red,
@@ -465,15 +488,82 @@
           '<div class="foto">' + foto +
             '<span class="chip ' + claseChip(p.estado) + '">' + esc(p.estado) + '</span>' +
           '</div>' +
-          '<div class="datos">' +
+          '<div class="datos" onclick="abrirFicha(\'' + esc(p.id) + '\')">' +
             '<div class="nombre">' + esc(p.nombre) + '</div>' +
             '<div class="marca">' + esc(p.marca) +
               (p.presentacion ? ' · ' + esc(p.presentacion) : '') + '</div>' +
             '<div class="precio">' + moneda(p.precio) + '</div>' +
-            '<div id="ctrl-' + esc(p.id) + '">' + control(p) + '</div>' +
           '</div>' +
+          '<div id="ctrl-' + esc(p.id) + '" style="padding:0 10px 11px">' + control(p) + '</div>' +
           '</div>';
       }).join('') + '</div>';
+  }
+
+  // ------------------------------------------------------- Ficha
+  // Al tocar un producto se abre su ficha. Se arma con lo que ya vive en el
+  // Catálogo, más la descripción de la hoja de vitrina si la tiene. Un campo
+  // vacío no se enseña: vale más una ficha corta que una llena de renglones
+  // en blanco.
+
+  function abrirFicha(id) {
+    var p = producto(id);
+    if (!p) return;
+
+    var atributos = [
+      ['Marca', p.marca],
+      ['Contenido', p.presentacion],
+      ['Tipo de producto', p.tipo],
+      ['Para piel', p.piel],
+      ['Disponibilidad', p.estado]
+    ].filter(function (a) { return a[1]; }).map(function (a) {
+      return '<div><dt>' + esc(a[0]) + '</dt><dd>' + esc(a[1]) + '</dd></div>';
+    }).join('');
+
+    document.getElementById('ficha').innerHTML =
+      '<div class="ficha-foto">' +
+        (p.foto
+          ? '<img src="' + esc(p.foto) + '" alt="' + esc(p.nombre) + '" ' +
+            'onerror="this.style.display=\'none\'">'
+          : '<span class="marca-agua">unnibeauty</span>') +
+      '</div>' +
+      '<h2>' + esc(p.nombre) + '</h2>' +
+      '<div class="submarca">' + esc(p.marca) +
+        (p.presentacion ? ' · ' + esc(p.presentacion) : '') + '</div>' +
+      '<div class="precio-grande">' + moneda(p.precio) + '</div>' +
+      (p.descripcion ? '<p class="descripcion">' + esc(p.descripcion) + '</p>' : '') +
+      // La advertencia va antes de la tabla y no al final: es lo único de la
+      // ficha que puede evitarle un problema a la clienta, no se esconde
+      // debajo de tres renglones de datos.
+      (p.advertencia
+        ? '<div class="advertencia">' +
+          '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8B1A26" ' +
+            'stroke-width="2" stroke-linecap="round" aria-hidden="true">' +
+            '<circle cx="12" cy="12" r="9"></circle>' +
+            '<path d="M12 7v6"></path><path d="M12 16.5v.01"></path></svg>' +
+          '<span>' + esc(p.advertencia) + '</span></div>'
+        : '') +
+      '<dl class="atributos">' + atributos + '</dl>' +
+      '<div id="ctrl-ficha" style="margin-top:14px">' + controlFicha(p) + '</div>' +
+      '<button class="enviar cerrar" onclick="cerrarFicha()">Volver a la tienda</button>';
+    document.getElementById('telonFicha').style.display = '';
+  }
+
+  function controlFicha(p) {
+    if (!p.sePuedePedir) return '<div class="sin-boton">No disponible por ahora</div>';
+    var n = carrito[p.id] || 0;
+    if (!n) {
+      return '<button class="enviar wa" onclick="agregar(\'' + esc(p.id) + '\')">Agregar al pedido</button>';
+    }
+    return '<div class="paso">' +
+      '<button onclick="cambiar(\'' + esc(p.id) + '\',-1)">−</button>' +
+      '<span class="cuenta">' + n + ' en tu pedido</span>' +
+      '<button onclick="cambiar(\'' + esc(p.id) + '\',1)"' +
+        (n >= p.maximo ? ' disabled style="opacity:.35"' : '') + '>+</button>' +
+      '</div>';
+  }
+
+  function cerrarFicha() {
+    document.getElementById('telonFicha').style.display = 'none';
   }
 
   // ------------------------------------------------------- Carrito
@@ -536,6 +626,11 @@
     // se redibujara todo, la página brincaría de lugar en cada toque.
     var caja = document.getElementById('ctrl-' + id);
     if (caja) caja.innerHTML = control(p);
+    // Si la ficha de ese mismo producto está abierta, su control también
+    if (document.getElementById('telonFicha').style.display !== 'none') {
+      var enFicha = document.getElementById('ctrl-ficha');
+      if (enFicha) enFicha.innerHTML = controlFicha(p);
+    }
     pintarBarra();
     if (document.getElementById('telon').style.display !== 'none') pintarCarrito();
   }
@@ -553,6 +648,7 @@
 
   function abrirCarrito() {
     if (!piezas()) return;
+    cerrarFicha();
     pintarCarrito();
     document.getElementById('telon').style.display = '';
   }
@@ -643,8 +739,6 @@
       enviando = false;
       boton.disabled = false;
       boton.textContent = 'Enviar pedido';
-      // Si algo se agotó mientras decidía, el mensaje dice qué: hay que
-      // recargar el catálogo para que el contador refleje lo que queda.
       errorPedido(explicar(e));
       cargar();
     });
@@ -684,8 +778,7 @@
       'https://wa.me/' + datos.whatsapp + '?text=' + encodeURIComponent(saludo);
     document.getElementById('enlaceIg').href = 'https://ig.me/m/' + datos.instagram;
     document.getElementById('contacto').style.display = '';
-    document.getElementById('pie').textContent =
-      'Precios en pesos mexicanos. La existencia se actualiza varias veces al día.';
+    document.getElementById('pie').textContent = 'Precios en pesos mexicanos.';
   }
 
   cargar();
