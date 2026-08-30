@@ -633,16 +633,74 @@
     return m || 'Algo salió mal.';
   }
 
+  // ------------------------------------------------- Arranque instantáneo
+  /*
+   * El catálogo de la visita anterior se guarda en el teléfono y se pinta de
+   * inmediato al abrir, sin esperar al servidor. Un segundo después llega el
+   * catálogo fresco y reemplaza todo.
+   *
+   * Se puede enseñar una copia vieja sin miedo porque el precio y las piezas
+   * que ve la clienta no son los que mandan: cuando manda el pedido, el
+   * servidor vuelve a revisar existencia contra el ledger y rechaza lo que
+   * ya no alcanza. La copia sirve para que la tienda se vea llena de
+   * inmediato, no para cerrar la venta.
+   */
+  var LLAVE_CATALOGO = 'unnibeauty_catalogo';
+
+  function guardarCatalogo(r) {
+    try { localStorage.setItem(LLAVE_CATALOGO, JSON.stringify(r)); }
+    catch (e) { /* sin memoria o copia muy grande: se sigue sin ella */ }
+  }
+
+  // Devuelve si alcanzó a pintar algo, para saber después si el catálogo
+  // fresco está reemplazando una pantalla llena o una vacía.
+  function pintarDeMemoria() {
+    var r;
+    try { r = JSON.parse(localStorage.getItem(LLAVE_CATALOGO) || 'null'); }
+    catch (e) { return false; }
+    if (!r || !r.productos || !r.productos.length) return false;
+    datos = r;
+    document.getElementById('logo').src = r.logo || '';
+    recuperarCarrito();
+    pintarFiltros();
+    pintarContacto();
+    pintar();
+    pintarBarra();
+    return true;
+  }
+
+  /*
+   * Reajusta el carrito que ya está en memoria contra el catálogo fresco.
+   *
+   * No se vuelve a leer lo guardado, a propósito: si mientras cargaba la
+   * clienta alcanzó a agregar algo, releer el guardado se lo borraría.
+   */
+  function reclamarCarrito() {
+    var previo = carrito;
+    carrito = {};
+    Object.keys(previo).forEach(function (id) {
+      var p = producto(id);
+      if (!p || !p.sePuedePedir) return;
+      carrito[id] = Math.min(previo[id], p.maximo);
+    });
+    guardarCarrito();
+  }
+
   function cargar() {
+    var habiaCopia = pintarDeMemoria();
     pedirDatos(null).then(function (r) {
       datos = r;
       document.getElementById('logo').src = r.logo || '';
-      recuperarCarrito();
+      if (habiaCopia) reclamarCarrito(); else recuperarCarrito();
       pintarFiltros();
       pintarContacto();
       pintar();
       pintarBarra();
+      guardarCatalogo(r);
     })['catch'](function (e) {
+      // Con una copia en pantalla no se borra la tienda por una falla de
+      // red: se sigue viendo lo de antes, que es mejor que un error.
+      if (habiaCopia) return;
       document.getElementById('lista').innerHTML =
         '<div class="error"><b>No pudimos cargar el catálogo.</b><br><br>' +
         esc(explicar(e)) + '</div>';
@@ -747,7 +805,10 @@
         // Si la foto no carga, se oculta y queda el recuadro con la marca de
         // agua: nunca el ícono de imagen rota.
         var foto = p.foto
-          ? '<img src="' + esc(p.foto) + '" alt="' + esc(p.nombre) + '" loading="lazy" ' +
+          ? '<img src="' + esc(p.foto) + '" alt="' + esc(p.nombre) + '" ' +
+            // Prioridad baja y descifrado aparte: la foto nunca debe frenar
+            // ni el catálogo ni el dibujo de la cuadrícula.
+            'loading="lazy" decoding="async" fetchpriority="low" ' +
             'onerror="this.style.display=\'none\'">'
           : '<span class="marca-agua">unnibeauty</span>';
         return '<div class="producto' + (p.sePuedePedir ? '' : ' sin-existencia') + '">' +
