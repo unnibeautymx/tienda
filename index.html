@@ -51,6 +51,53 @@
   }
   .envoltura { max-width: 620px; margin: 0 auto; padding: 0 14px; }
 
+  /* ------------------------------------------------------- Portada
+     El logo grande al centro mientras carga el catálogo, y de ahí se va
+     volando a su lugar en el encabezado.
+
+     No es puro adorno: tapa exactamente el rato en que la tienda está vacía.
+     Antes se veía el encabezado con un hueco y un "Cargando…" debajo.
+
+     El fondo se desvanece pero el logo NO: vuela opaco y aterriza justo
+     encima del logo real, que está escondido hasta que llega. Así el cambio
+     no se ve como un corte, se ve como un solo logo que se acomodó. */
+  #portada {
+    position: fixed; inset: 0; z-index: 50;
+    background-color: var(--crema);
+    display: flex; align-items: center; justify-content: center;
+    transition: background-color .5s ease;
+  }
+  #portada.cerrando { background-color: transparent; pointer-events: none; }
+  #portada.fuera { display: none; }
+  #logoPortada {
+    width: 190px; height: 190px; object-fit: cover; border-radius: 50%;
+    display: none; animation: entrarPortada .5s ease both;
+    transition: transform .6s cubic-bezier(.55, 0, .2, 1);
+  }
+  /* Mientras no haya imagen —primera visita, todavía sin catálogo guardado—
+     el nombre en la fuente de la marca hace de logo. El hueco se ve
+     intencional en vez de vacío. */
+  #nombrePortada {
+    font-family: var(--marca); font-size: 34px; color: var(--jade-oscuro);
+    animation: entrarPortada .5s ease both;
+  }
+  #portada.con-logo #logoPortada { display: block; }
+  #portada.con-logo #nombrePortada { display: none; }
+  @keyframes entrarPortada {
+    from { opacity: 0; transform: scale(.94); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  /* El logo de verdad se esconde hasta que el de la portada aterriza, para
+     que no se vean dos al mismo tiempo. */
+  body.con-portada header img { visibility: hidden; }
+
+  /* Quien pidió menos movimiento no ve el vuelo: la portada solo se
+     desvanece. La animación es un gusto, no información. */
+  @media (prefers-reduced-motion: reduce) {
+    #logoPortada { animation: none; transition: none; }
+    #nombrePortada { animation: none; }
+  }
+
   /* ------------------------------------------------------- Encabezado */
   header { text-align: center; padding: 24px 14px 14px; }
   /* El logo YA trae el nombre escrito, así que repetirlo debajo lo decía dos
@@ -404,10 +451,24 @@
 <body>
 
 
+<div id="portada" class="" aria-hidden="true">
+  <img id="logoPortada" alt="" src="">
+  <span id="nombrePortada">unnibeauty</span>
+</div>
+<script>
+  /* El cierre de emergencia se registra aquí, aparte del resto del código:
+     si algo más truena, la portada no se puede quedar tapando la tienda
+     para siempre. */
+  document.body.className += ' con-portada';
+  window.__cerrarPortadaTarde = setTimeout(function () {
+    if (window.cerrarPortada) window.cerrarPortada();
+  }, 4000);
+</script>
+
 <header>
   <img id="logo" alt="unnibeauty" src="">
   <h1 class="solo-lectores">unnibeauty</h1>
-  <p><b>Tu k-beauty favorito, traído directamente desde Corea.</b>
+  <p><b>Tu k-beauty favorito, traído directamente desde Corea.</b><br>
     Toca cada producto para ver su descripción y con qué tipos de piel
     funciona mejor, y encuentra justo lo que la tuya necesita. Arma tu pedido
     y nosotras nos encargamos del resto, ¡bienvenida!</p>
@@ -645,6 +706,83 @@
     return m || 'Algo salió mal.';
   }
 
+  // ------------------------------------------------------------ Portada
+  /*
+   * La portada se va cuando ya hay algo que enseñar, nunca antes de medio
+   * segundo. Ese mínimo es para que no parpadee: en visita repetida el
+   * catálogo guardado está listo de inmediato, y una portada que aparece y
+   * desaparece en 80 ms se ve como un error, no como una entrada.
+   *
+   * También se va sola a los 4 segundos aunque no haya llegado nada. Más
+   * vale enseñar la tienda vacía con su mensaje de error que dejar a alguien
+   * mirando un logo sin saber si se descompuso.
+   */
+  var PORTADA_MINIMO = 600;
+  var portadaDesde = Date.now();
+  var portadaCerrada = false;
+
+  function ponerLogoPortada(url) {
+    // Si la portada ya se fue, el logo que llega tarde no tiene dónde
+    // aparecer: metérselo ahí lo haría cruzar la pantalla solo, encima de
+    // una tienda que ya estaba lista.
+    if (!url || portadaCerrada) return;
+    var img = document.getElementById('logoPortada');
+    if (!img || img.src === url) return;
+    img.onerror = function () {
+      // Si el logo no carga, se regresa al nombre en vez de dejar el ícono
+      // de imagen rota presidiendo la entrada.
+      document.getElementById('portada').classList.remove('con-logo');
+    };
+    img.src = url;
+    document.getElementById('portada').classList.add('con-logo');
+  }
+
+  function menosMovimiento() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  // Se pide el cierre; ella decide si ya le toca o si todavía le falta para
+  // el mínimo.
+  function pedirCierrePortada() {
+    var falta = PORTADA_MINIMO - (Date.now() - portadaDesde);
+    if (falta > 0) { setTimeout(cerrarPortada, falta); return; }
+    cerrarPortada();
+  }
+
+  function cerrarPortada() {
+    if (portadaCerrada) return;
+    portadaCerrada = true;
+    clearTimeout(window.__cerrarPortadaTarde);
+    var portada = document.getElementById('portada');
+    var img = document.getElementById('logoPortada');
+    var destino = document.getElementById('logo');
+    var vuelo = 0;
+
+    // El vuelo se calcula con las posiciones reales de los dos logos, no con
+    // números escritos a mano: así sigue aterrizando bien aunque cambien los
+    // tamaños o el ancho de la pantalla.
+    if (img && destino && img.offsetWidth && destino.offsetWidth && !menosMovimiento()) {
+      // Se apaga la animación de entrada ANTES de medir. Dos razones, y las
+      // dos rompen el vuelo: mientras corre, el logo se mide a media escala
+      // y el vuelo aterrizaría chico; y al terminar deja su transform
+      // pegado, que le gana al que pone el vuelo y lo dejaría sin moverse.
+      img.style.animation = 'none';
+      var a = img.getBoundingClientRect();
+      var b = destino.getBoundingClientRect();
+      img.style.transform =
+        'translate(' + ((b.left + b.width / 2) - (a.left + a.width / 2)) + 'px,' +
+                       ((b.top + b.height / 2) - (a.top + a.height / 2)) + 'px) ' +
+        'scale(' + (b.width / a.width) + ')';
+      vuelo = 600;
+    }
+
+    portada.classList.add('cerrando');
+    setTimeout(function () {
+      document.body.className = document.body.className.replace(/ ?con-portada/, '');
+      portada.classList.add('fuera');
+    }, vuelo);
+  }
+
   // ------------------------------------------------- Arranque instantáneo
   /*
    * El catálogo de la visita anterior se guarda en el teléfono y se pinta de
@@ -673,6 +811,9 @@
     if (!r || !r.productos || !r.productos.length) return false;
     datos = r;
     document.getElementById('logo').src = r.logo || '';
+    // En visita repetida el logo ya está aquí, así que la portada lo puede
+    // enseñar desde el primer cuadro en vez del nombre.
+    ponerLogoPortada(r.logo);
     recuperarCarrito();
     pintarFiltros();
     pintarContacto();
@@ -700,9 +841,15 @@
 
   function cargar() {
     var habiaCopia = pintarDeMemoria();
+    // Con la copia en pantalla ya hay tienda que enseñar: la portada no tiene
+    // por qué esperar a la red. Es justo lo que hace que la visita repetida
+    // se sienta instantánea.
+    if (habiaCopia) pedirCierrePortada();
     pedirDatos(null).then(function (r) {
       datos = r;
       document.getElementById('logo').src = r.logo || '';
+      ponerLogoPortada(r.logo);
+      pedirCierrePortada();
       if (habiaCopia) reclamarCarrito(); else recuperarCarrito();
       pintarFiltros();
       pintarContacto();
@@ -710,6 +857,8 @@
       pintarBarra();
       guardarCatalogo(r);
     })['catch'](function (e) {
+      // La portada se va aunque haya fallado: el error hay que poder verlo.
+      pedirCierrePortada();
       // Con una copia en pantalla no se borra la tienda por una falla de
       // red: se sigue viendo lo de antes, que es mejor que un error.
       if (habiaCopia) return;
