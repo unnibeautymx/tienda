@@ -1,5 +1,22 @@
-<!-- Tienda.html — unni beauty · página para clientas -->
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>unnibeauty · skincare coreano</title>
+<meta name="description" content="Skincare coreano original, elegido con calma y explicado sin complicaciones. Filtra por tipo de piel, categoría y marca. Entrega en Mazatlán y envíos a todo México.">
+<meta name="theme-color" content="#3D7A62">
+<meta property="og:type" content="website">
+<meta property="og:title" content="unnibeauty">
+<meta property="og:description" content="Skincare coreano original, para que encuentres lo que tu piel necesita.">
+<meta property="og:image" content="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
+<link rel="icon" href="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
+<link rel="apple-touch-icon" href="https://i.postimg.cc/ZbtSq4KB/Copia-de-Logotipos.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <style>
+
   /* Righteous es la fuente del logotipo: se rescata para el nombre de la
      tienda y para los precios. No tiene negritas de verdad, así que donde se
      usa el peso se deja en normal para no pedirle al navegador una falsa. */
@@ -388,7 +405,40 @@
   }
 
   /* --------------------------------------------------- Ficha */
-  .producto .datos { cursor: pointer; }
+  /* Todo lo que abre la ficha responde igual al tocarse: la foto y los datos
+     son la misma puerta, así que se hunden igual. El botón de agregar queda
+     fuera a propósito: hace otra cosa. */
+  .abre-ficha { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .producto .datos { transition: transform .18s ease; }
+  .producto .datos:active { transform: scale(.97); }
+  /* En la foto se acerca la imagen en vez de encoger el marco: encoger el
+     recuadro movería la cuadrícula entera al tocar. */
+  .foto img { transition: transform .4s cubic-bezier(.2, .7, .3, 1); }
+  .foto.abre-ficha:active img { transform: scale(1.07); }
+  .foto.abre-ficha:active .marca-agua { opacity: .55; }
+  .marca-agua { transition: opacity .25s ease; }
+
+  /* La ficha y el carrito entran deslizándose desde abajo, como se espera de
+     un panel que sale del borde. La animación arranca sola cada vez que el
+     telón deja de estar oculto. */
+  @keyframes aparecerTelon { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes subirPanel {
+    from { transform: translateY(26px); opacity: .6; }
+    to   { transform: translateY(0); opacity: 1; }
+  }
+  /* Sin fill-mode a propósito: con "both" el panel se queda agarrado a su
+     estado inicial mientras está escondido, y basta que algo lo enseñe sin
+     reiniciar la animación para que aparezca a media opacidad. Al terminar
+     ya está en su estado natural, así que no hace falta. */
+  .telon { animation: aparecerTelon .22s ease; }
+  .telon > .panel { animation: subirPanel .34s cubic-bezier(.2, .8, .25, 1); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .producto .datos, .foto img, .marca-agua { transition: none; }
+    .producto .datos:active { transform: none; }
+    .foto.abre-ficha:active img { transform: none; }
+    .telon, .telon > .panel { animation: none; }
+  }
   /* La tacha se queda pegada arriba al hacer scroll: en una ficha larga,
      una que se fuera con la foto obligaría a subir hasta el tope para salir. */
   .cerrar-ficha {
@@ -453,6 +503,9 @@
   .ig { background: transparent; color: var(--jade); border: 1px solid var(--jade); }
   footer { text-align: center; font-size: 11.5px; color: var(--tenue); margin-top: 16px; }
 </style>
+</head>
+<body>
+
 
 <div id="portada" class="" aria-hidden="true">
   <img id="logoPortada" alt="" src="">
@@ -588,7 +641,14 @@
   </div>
 </div>
 
+
 <script>
+  /* ------------------------------------------------------------------
+   * URL del Apps Script que sirve los datos. VERIFÍCALA si creaste una
+   * implementación NUEVA en vez de actualizar la de siempre.
+   * ------------------------------------------------------------------ */
+  var API = 'https://script.google.com/macros/s/AKfycbzF1PC5NZB9cGq4N2TkhBLUSwSuD2dHivbs6hgeAiBPs2b7SFScyDHg0MD2JI09tttf/exec';
+
   var datos = null;
 
   // Los tres filtros son multiselección y viven en el mismo formato, así que
@@ -646,6 +706,66 @@
     if (estado === 'Vuelve pronto') return 'camino';
     if (estado === 'Agotado') return 'agotado';
     return 'pocas';
+  }
+
+  /**
+   * Habla con el Apps Script. Los errores se distinguen por capa a propósito:
+   * "no cargó" puede ser la URL sin pegar, el script sin republicar o la red,
+   * y son arreglos distintos. Un mensaje genérico obliga a adivinar.
+   */
+  function pedirDatos(cuerpo) {
+    if (API.indexOf('PEGA_AQUI') >= 0) {
+      return Promise.reject(new Error('FALTA_URL'));
+    }
+    var opciones = cuerpo
+      // Texto plano y no JSON a propósito: con Content-Type de JSON el
+      // navegador manda antes una petición de permiso que Apps Script no
+      // sabe contestar, y la llamada muere sin llegar.
+      ? { method: 'POST', body: JSON.stringify(cuerpo),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' } }
+      : { method: 'GET' };
+    var url = API + (cuerpo ? '' : (API.indexOf('?') < 0 ? '?' : '&') + 'api=1');
+
+    return fetch(url, opciones)
+      .then(function (r) { return r.text(); }, function () {
+        throw new Error('SIN_CONTACTO');
+      })
+      .then(function (texto) {
+        var r;
+        try { r = JSON.parse(texto); }
+        catch (e) {
+          // Contestó algo que no es JSON. Si empieza con "<" es HTML: el
+          // Apps Script sigue sirviendo la página vieja porque no se ha
+          // publicado la versión con el servicio de datos.
+          throw new Error(texto.trim().charAt(0) === '<' ? 'SIN_PUBLICAR' : 'RESPUESTA_RARA');
+        }
+        if (!r.ok) throw new Error(r.error || 'Algo salió mal.');
+        return r.datos;
+      });
+  }
+
+  // Traduce las fallas de conexión a algo accionable. Los errores del
+  // servidor (stock, validaciones) pasan tal cual: ésos ya vienen claros.
+  function explicar(e) {
+    var m = e && e.message;
+    if (m === 'FALTA_URL') {
+      return 'Falta pegar la URL del Apps Script en el archivo index.html, ' +
+        'en la línea que dice var API.';
+    }
+    if (m === 'SIN_CONTACTO') {
+      return 'No se pudo contactar al servidor. Revisa que la URL del Apps Script ' +
+        'sea la que termina en /exec, y que esté publicada con acceso ' +
+        '"Cualquier persona".';
+    }
+    if (m === 'SIN_PUBLICAR') {
+      return 'El Apps Script está contestando la página vieja en lugar de los datos. ' +
+        'Publica una nueva versión con el archivo 02_WebApp.gs actualizado.';
+    }
+    if (m === 'RESPUESTA_RARA') {
+      return 'El servidor contestó algo inesperado. Abre tu URL con ?api=1 al final ' +
+        'en el navegador para ver qué responde.';
+    }
+    return m || 'Algo salió mal.';
   }
 
   // ------------------------------------------------------------ Portada
@@ -839,32 +959,27 @@
     // por qué esperar a la red. Es justo lo que hace que la visita repetida
     // se sienta instantánea.
     if (habiaCopia) pedirCierrePortada();
-    google.script.run
-      .withSuccessHandler(function (r) {
-        datos = r;
-        document.getElementById('logo').src = r.logo || '';
-        ponerLogoPortada(r.logo);
-        pedirCierrePortada();
-        if (habiaCopia) reclamarCarrito(); else recuperarCarrito();
-        pintarFiltros();
-        pintarContacto();
-        pintar();
-        // El estado inicial de la barra lo fija el código, no el atributo
-        // del marcado: así no depende de que el HTML venga con display:none.
-        pintarBarra();
-        guardarCatalogo(r);
-      })
-      .withFailureHandler(function (e) {
-        // La portada se va aunque haya fallado: el error hay que poder verlo.
-        pedirCierrePortada();
-        // Con una copia en pantalla no se borra la tienda por una falla de
-        // red: se sigue viendo lo de antes, que es mejor que un error.
-        if (habiaCopia) return;
-        document.getElementById('lista').innerHTML =
-          '<div class="error">No pudimos cargar el catálogo en este momento. ' +
-          'Vuelve a intentar en un minuto.<br><br>' + esc(e.message) + '</div>';
-      })
-      .listarCatalogoTienda();
+    pedirDatos(null).then(function (r) {
+      datos = r;
+      document.getElementById('logo').src = r.logo || '';
+      ponerLogoPortada(r.logo);
+      pedirCierrePortada();
+      if (habiaCopia) reclamarCarrito(); else recuperarCarrito();
+      pintarFiltros();
+      pintarContacto();
+      pintar();
+      pintarBarra();
+      guardarCatalogo(r);
+    })['catch'](function (e) {
+      // La portada se va aunque haya fallado: el error hay que poder verlo.
+      pedirCierrePortada();
+      // Con una copia en pantalla no se borra la tienda por una falla de
+      // red: se sigue viendo lo de antes, que es mejor que un error.
+      if (habiaCopia) return;
+      document.getElementById('lista').innerHTML =
+        '<div class="error"><b>No pudimos cargar el catálogo.</b><br><br>' +
+        esc(explicar(e)) + '</div>';
+    });
   }
 
   function pintarFiltros() {
@@ -972,10 +1087,10 @@
             'onerror="this.style.display=\'none\'">'
           : '<span class="marca-agua">unnibeauty</span>';
         return '<div class="producto' + (p.sePuedePedir ? '' : ' sin-existencia') + '">' +
-          '<div class="foto">' + foto +
+          '<div class="foto abre-ficha" onclick="abrirFicha(\'' + esc(p.id) + '\')">' + foto +
             '<span class="chip ' + claseChip(p.estado) + '">' + esc(p.estado) + '</span>' +
           '</div>' +
-          '<div class="datos" onclick="abrirFicha(\'' + esc(p.id) + '\')">' +
+          '<div class="datos abre-ficha" onclick="abrirFicha(\'' + esc(p.id) + '\')">' +
             '<div class="nombre">' + esc(p.nombre) + '</div>' +
             '<div class="marca">' + esc(p.marca) +
               (p.presentacion ? ' · ' + esc(p.presentacion) : '') + '</div>' +
@@ -1342,29 +1457,24 @@
     boton.textContent = 'Enviando…';
     document.getElementById('errorPedido').innerHTML = '';
 
-    google.script.run
-      .withSuccessHandler(function (r) {
-        enviando = false;
-        mostrarConfirmacion(r);
-      })
-      .withFailureHandler(function (e) {
-        enviando = false;
-        boton.disabled = false;
-        boton.textContent = 'Enviar pedido';
-        // Si algo se agotó mientras decidía, el mensaje dice qué: hay que
-        // recargar el catálogo para que el contador refleje lo que queda.
-        errorPedido(e.message);
-        cargar();
-      })
-      .registrarSolicitud({
-        nombre: nombre.value,
-        whatsapp: digitos,
-        instagram: usuario,
-        entrega: entrega.value,
-        direccion: pideDireccion ? direccion.value : '',
-        pago: pago.value,
-        lineas: lineas
-      });
+    pedirDatos({
+      nombre: nombre.value,
+      whatsapp: digitos,
+      instagram: usuario,
+      entrega: entrega.value,
+      direccion: pideDireccion ? direccion.value : '',
+      pago: pago.value,
+      lineas: lineas
+    }).then(function (r) {
+      enviando = false;
+      mostrarConfirmacion(r);
+    })['catch'](function (e) {
+      enviando = false;
+      boton.disabled = false;
+      boton.textContent = 'Enviar pedido';
+      errorPedido(explicar(e));
+      cargar();
+    });
   }
 
   function errorPedido(mensaje, campo) {
@@ -1426,3 +1536,5 @@
 
   cargar();
 </script>
+</body>
+</html>
