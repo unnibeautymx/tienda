@@ -229,6 +229,11 @@
   .chip.camino { background: var(--camino); }
   .chip.agotado { background: var(--agotado); }
 
+  .preventa {
+    font-size: 11px; line-height: 1.35; color: var(--camino);
+    font-weight: 700; padding: 3px 0 0;
+  }
+
   /* --------------------------------------------------- Carrito */
   .agregar {
     margin-top: 7px; width: 100%; padding: 8px; font-size: 13px; font-weight: 700;
@@ -886,14 +891,15 @@
     if (!p.sePuedePedir) return '<div class="sin-boton">No disponible por ahora</div>';
     var n = carrito[p.id] || 0;
     if (!n) {
-      return '<button class="enviar wa" onclick="agregar(\'' + esc(p.id) + '\')">Agregar al pedido</button>';
+      return '<button class="enviar wa" onclick="agregar(\'' + esc(p.id) + '\')">Agregar al pedido</button>' +
+        notaPreventa(p, 0);
     }
     return '<div class="paso">' +
       '<button onclick="cambiar(\'' + esc(p.id) + '\',-1)">−</button>' +
       '<span class="cuenta">' + n + ' en tu pedido</span>' +
       '<button onclick="cambiar(\'' + esc(p.id) + '\',1)"' +
         (n >= p.maximo ? ' disabled style="opacity:.35"' : '') + '>+</button>' +
-      '</div>';
+      '</div>' + notaPreventa(p, n);
   }
 
   function cerrarFicha() {
@@ -969,11 +975,37 @@
 
   // El control de cada tarjeta: botón para agregar, o el contador si ya está
   // en el pedido. Los agotados no llevan botón, no se pueden pedir.
+  /*
+   * Qué se le dice a la clienta cuando su cantidad se pasa de lo que hay en
+   * mano y entra a lo que viene en camino.
+   *
+   * El aviso aparece justo al cruzar esa raya y no antes: mientras alcance
+   * con lo que está en el estante, la fecha de llegada es ruido. Se calla
+   * sola cuando baja la cantidad.
+   */
+  function notaPreventa(p, n) {
+    if (!p.llegada) return '';
+    // Si NADA sale hoy, se dice desde antes de agregar: es la diferencia
+    // entre comprarlo y esperarlo, y se decide con esa información, no
+    // después.
+    if (!p.inmediato) {
+      return '<div class="preventa">De vuelta ' + esc(p.llegada) + '</div>';
+    }
+    if (!n || n <= p.inmediato) return '';
+    var despues = n - p.inmediato;
+    // Las dos partes se entregan por separado, así que se dicen por
+    // separado: "2 salen ya" y "2 de vuelta a partir del…".
+    return '<div class="preventa">' + p.inmediato +
+      (p.inmediato === 1 ? ' sale ya' : ' salen ya') + ' · ' + despues +
+      ' de vuelta ' + esc(p.llegada) + '</div>';
+  }
+
   function control(p) {
     if (!p.sePuedePedir) return '<div class="sin-boton">No disponible</div>';
     var n = carrito[p.id] || 0;
     if (!n) {
-      return '<button class="agregar" onclick="agregar(\'' + esc(p.id) + '\')">Agregar</button>';
+      return '<button class="agregar" onclick="agregar(\'' + esc(p.id) + '\')">Agregar</button>' +
+        notaPreventa(p, 0);
     }
     // El + se apaga al llegar a lo que hay. El servidor lo revalida al
     // guardar, porque entre que cargó la página y se envía puede haberse
@@ -985,7 +1017,10 @@
       '<button onclick="cambiar(\'' + esc(p.id) + '\',1)" aria-label="Agregar uno"' +
         (tope ? ' disabled style="opacity:.35"' : '') + '>+</button>' +
       '</div>' +
-      (tope ? '<div class="sin-boton" style="padding:3px 0">Es todo lo que hay</div>' : '');
+      notaPreventa(p, n) +
+      (tope ? '<div class="sin-boton" style="padding:3px 0">' +
+        (p.llegada ? 'Es todo lo que podemos apartarte' : 'Es todo lo que hay') +
+        '</div>' : '');
   }
 
   function agregar(id) { cambiar(id, 1); }
@@ -1195,7 +1230,15 @@
       '<div class="exito">' +
       '<div style="font-weight:700; font-size:17px; color:var(--jade-oscuro)">¡Pedido recibido!</div>' +
       '<div class="folio">' + esc(r.folio) + '</div>' +
-      '<div class="pie">Guarda ese número por si necesitas mencionarlo.</div>' +
+      '<div class="pie">' + (r.partido
+        ? 'Son dos números porque tu pedido se entrega en dos partes.'
+        : 'Guarda ese número por si necesitas mencionarlo.') + '</div>' +
+      (r.partido
+        ? '<p style="margin:12px 0 0; font-size:14px; line-height:1.5">' +
+          '<b>Lo que tenemos ahorita te lo mandamos de una vez</b>, sin esperar ' +
+          'al resto. Lo que viene en camino te llega después, en su propia ' +
+          'entrega, y te avisamos en cuanto esté aquí.</p>'
+        : '') +
       '<p style="margin:12px 0 0; font-size:14px; line-height:1.5">En un rato te escribimos ' +
         'para confirmarte tu pedido, pasarte los datos para pagar y ' +
         (r.pideDireccion
