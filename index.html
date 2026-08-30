@@ -447,14 +447,23 @@
     margin: -16px -14px 0; padding: 10px 14px 6px;
     background: linear-gradient(var(--crema) 72%, rgba(250,246,240,0));
   }
+  /* En blanco sobre crema se perdía. Va en jade con la tacha blanca: es el
+     único botón redondo de la ficha, así que no compite con nada. */
   .cerrar-ficha button {
-    width: 34px; height: 34px; padding: 0; flex: 0 0 auto;
-    border: 1px solid var(--linea); border-radius: 50%;
-    background: #fff; color: var(--tenue);
+    width: 36px; height: 36px; padding: 0; flex: 0 0 auto;
+    border: none; border-radius: 50%;
+    background: var(--jade); color: #fff;
+    box-shadow: 0 2px 6px rgba(28, 74, 56, .28);
     display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
+    cursor: pointer; transition: transform .15s ease, background-color .15s ease;
   }
-  .cerrar-ficha button:active { background: var(--linea); }
+  .cerrar-ficha button:active {
+    background: var(--jade-oscuro); transform: scale(.92);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cerrar-ficha button { transition: none; }
+    .cerrar-ficha button:active { transform: none; }
+  }
   .ficha-foto {
     width: 100%; aspect-ratio: 1 / 1; background: #F1EAE0;
     border-radius: 10px; overflow: hidden;
@@ -468,6 +477,20 @@
     color: var(--rojo); margin: 10px 0 4px;
   }
   .ficha .descripcion { font-size: 14px; line-height: 1.5; margin: 12px 0 0; }
+
+  /* El bloque de agregar se queda pegado abajo de la ficha. En una ficha
+     larga, el botón vivía al final del scroll: había que leerse todo para
+     poder pedir. Ahora está disponible desde que se abre.
+     Los márgenes negativos lo llevan hasta el borde del panel, y su propio
+     relleno le devuelve el aire. */
+  .pie-ficha {
+    position: sticky; bottom: 0; z-index: 2;
+    margin: 14px -14px calc(-16px - env(safe-area-inset-bottom));
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: var(--crema);
+    border-top: 1px solid var(--linea);
+  }
+  .pie-ficha .enviar { margin-top: 0; }
   .advertencia {
     display: flex; gap: 9px; align-items: flex-start;
     margin: 12px 0 0; padding: 10px 12px;
@@ -848,6 +871,49 @@
     }, vuelo);
   }
 
+  // ------------------------------------------------------------ El de atrás
+  /*
+   * En Android, el botón de atrás con un panel abierto sacaba de la tienda.
+   * Lo que espera cualquiera es que cierre lo que está encima.
+   *
+   * Truco: al abrir un panel se mete una entrada al historial. El botón de
+   * atrás consume esa entrada en lugar de salir de la página, y ahí cerramos.
+   * Al cerrar con la tacha se retira esa entrada a mano, para que después no
+   * haya que picarle dos veces a atrás.
+   *
+   * Es una sola entrada aunque se pase de la ficha al carrito: sigue siendo
+   * "algo encima de la tienda", y meter dos obligaría a dos toques para
+   * volver a lo mismo.
+   */
+  var hayCapa = false;
+  var cerrandoNosotros = false;
+
+  function empujarCapa() {
+    if (hayCapa || !window.history || !history.pushState) return;
+    hayCapa = true;
+    try { history.pushState({ unniCapa: 1 }, ''); }
+    catch (e) { hayCapa = false; }   // sin historial, la tienda funciona igual
+  }
+
+  function sacarCapa() {
+    if (!hayCapa) return;
+    cerrandoNosotros = true;
+    history.back();
+  }
+
+  window.addEventListener('popstate', function () {
+    hayCapa = false;
+    // Si el cierre lo pedimos nosotros, ya está hecho: aquí solo se recoge
+    // la entrada del historial.
+    if (cerrandoNosotros) { cerrandoNosotros = false; return; }
+    // Vino del botón de atrás: se cierra lo que esté encima.
+    if (document.getElementById('telon').style.display !== 'none') {
+      cerrarCarritoEnSilencio();
+    } else if (document.getElementById('telonFicha').style.display !== 'none') {
+      cerrarFichaEnSilencio();
+    }
+  });
+
   // ------------------------------------------------------------ Entrada
   /*
    * Las tarjetas aparecen conforme se baja, y solo la primera vez.
@@ -1154,9 +1220,12 @@
           '<span>' + esc(p.advertencia) + '</span></div>'
         : '') +
       '<dl class="atributos">' + atributos + '</dl>' +
-      '<div id="ctrl-ficha" style="margin-top:14px">' + controlFicha(p) + '</div>' +
-      '<button class="enviar cerrar" onclick="cerrarFicha()">Volver a la tienda</button>';
+      '<button class="enviar cerrar" onclick="cerrarFicha()">Volver a la tienda</button>' +
+      // Va al final del marcado para que el pie pegajoso sea lo último de la
+      // ficha y no le quede nada encima.
+      '<div id="ctrl-ficha" class="pie-ficha">' + controlFicha(p) + '</div>';
     document.getElementById('telonFicha').style.display = '';
+    empujarCapa();
   }
 
   function controlFicha(p) {
@@ -1176,6 +1245,17 @@
   }
 
   function cerrarFicha() {
+    // Solo se retira la entrada del historial si el panel estaba realmente
+    // abierto. Hay quien llama a cerrar por si acaso, y sin esta guarda un
+    // cierre de más se comería la entrada de otro panel.
+    var estaba = document.getElementById('telonFicha').style.display !== 'none';
+    cerrarFichaEnSilencio();
+    if (estaba) sacarCapa();
+  }
+
+  // Cierra sin tocar el historial. La usa el botón de atrás, que ya consumió
+  // su entrada: retirarla otra vez sacaría de la tienda.
+  function cerrarFichaEnSilencio() {
     document.getElementById('telonFicha').style.display = 'none';
   }
 
@@ -1359,13 +1439,28 @@
 
   function abrirCarrito() {
     if (!piezas()) return;
-    cerrarFicha();
+    // En silencio: si se venía de la ficha, la entrada del historial se
+    // hereda en vez de sacarla y volver a meter otra.
+    cerrarFichaEnSilencio();
     pintarOpcionesPedido();
     pintarCarrito();
     document.getElementById('telon').style.display = '';
+    empujarCapa();
   }
 
   function cerrarCarrito() {
+    // Misma guarda que en la ficha, y aquí hace falta de verdad: pintarBarra
+    // llama a cerrar el carrito cada vez que se queda en cero, aunque el
+    // panel ni siquiera esté abierto. Sin esto, quitar la última pieza con la
+    // ficha abierta cerraría la ficha.
+    var estaba = document.getElementById('telon').style.display !== 'none';
+    cerrarCarritoEnSilencio();
+    if (estaba) sacarCapa();
+  }
+
+  // Cierra sin tocar el historial. La usa el botón de atrás, que ya consumió
+  // su entrada: retirarla otra vez sacaría de la tienda.
+  function cerrarCarritoEnSilencio() {
     confirmando = false;
     document.getElementById('telon').style.display = 'none';
     // El panel vuelve a su estado inicial: si no, tras un pedido enviado
