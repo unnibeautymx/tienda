@@ -70,26 +70,30 @@
   #portada.cerrando { background-color: transparent; pointer-events: none; }
   #portada.fuera { display: none; }
   #logoPortada {
-    width: 190px; height: 190px; object-fit: cover; border-radius: 50%;
-    display: none; animation: entrarPortada .5s ease both;
+    width: 232px; height: 232px; object-fit: cover; border-radius: 50%;
+    display: none; animation: entrarPortada .8s cubic-bezier(.2, .7, .3, 1) both;
     transition: transform .6s cubic-bezier(.55, 0, .2, 1);
   }
   /* Mientras no haya imagen —primera visita, todavía sin catálogo guardado—
      el nombre en la fuente de la marca hace de logo. El hueco se ve
      intencional en vez de vacío. */
   #nombrePortada {
-    font-family: var(--marca); font-size: 34px; color: var(--jade-oscuro);
-    animation: entrarPortada .5s ease both;
+    font-family: var(--marca); font-size: 40px; color: var(--jade-oscuro);
+    animation: entrarPortada .8s cubic-bezier(.2, .7, .3, 1) both;
   }
   #portada.con-logo #logoPortada { display: block; }
   #portada.con-logo #nombrePortada { display: none; }
   @keyframes entrarPortada {
-    from { opacity: 0; transform: scale(.94); }
+    from { opacity: 0; transform: scale(.88); }
     to   { opacity: 1; transform: scale(1); }
   }
-  /* El logo de verdad se esconde hasta que el de la portada aterriza, para
-     que no se vean dos al mismo tiempo. */
-  body.con-portada header img { visibility: hidden; }
+  /* El logo de verdad no se enseña hasta que el de la portada aterriza, para
+     que no se vean dos al mismo tiempo.
+     La regla vive en el propio logo y no en una clase del body: así nada más
+     de la página puede quitársela por accidente, que es justo lo que pasaba
+     y hacía que el vuelo aterrizara encima del logo ya puesto. */
+  header img { visibility: hidden; }
+  header img.puesto { visibility: visible; }
 
   /* Quien pidió menos movimiento no ve el vuelo: la portada solo se
      desvanece. La animación es un gusto, no información. */
@@ -285,6 +289,18 @@
     font-weight: 700; padding: 0 0 5px;
   }
 
+  /* Las tarjetas se acomodan conforme se va bajando, una sola vez. Es la
+     entrada de la tienda, no un efecto permanente: volver a animarlas en
+     cada filtro las volvería un estorbo. */
+  .producto {
+    transition: opacity .45s ease, transform .45s cubic-bezier(.2, .7, .3, 1);
+  }
+  .producto.entrando { opacity: 0; transform: translateY(16px); }
+  @media (prefers-reduced-motion: reduce) {
+    .producto { transition: none; }
+    .producto.entrando { opacity: 1; transform: none; }
+  }
+
   /* --------------------------------------------------- Carrito */
   .agregar {
     margin-top: 7px; width: 100%; padding: 8px; font-size: 13px; font-weight: 700;
@@ -459,9 +475,15 @@
   /* El cierre de emergencia se registra aquí, aparte del resto del código:
      si algo más truena, la portada no se puede quedar tapando la tienda
      para siempre. */
-  document.body.className += ' con-portada';
   window.__cerrarPortadaTarde = setTimeout(function () {
-    if (window.cerrarPortada) window.cerrarPortada();
+    if (window.cerrarPortada) { window.cerrarPortada(); return; }
+    // Ni siquiera existe la función: el código principal no corrió. Se quita
+    // la portada a mano y se enseña el logo, porque la regla que lo esconde
+    // vive en el CSS y sin esto se quedaría escondido para siempre.
+    var portada = document.getElementById('portada');
+    if (portada) portada.className += ' fuera';
+    var logo = document.getElementById('logo');
+    if (logo) logo.className += ' puesto';
   }, 4000);
 </script>
 
@@ -717,7 +739,7 @@
    * vale enseñar la tienda vacía con su mensaje de error que dejar a alguien
    * mirando un logo sin saber si se descompuso.
    */
-  var PORTADA_MINIMO = 600;
+  var PORTADA_MINIMO = 2000;
   var portadaDesde = Date.now();
   var portadaCerrada = false;
 
@@ -778,9 +800,61 @@
 
     portada.classList.add('cerrando');
     setTimeout(function () {
-      document.body.className = document.body.className.replace(/ ?con-portada/, '');
+      // El logo real aparece justo cuando el otro termina de aterrizar, en
+      // el mismo lugar y del mismo tamaño: el relevo no se ve.
+      if (destino) destino.classList.add('puesto');
       portada.classList.add('fuera');
+      soltarCartas();
     }, vuelo);
+  }
+
+  // ------------------------------------------------------------ Entrada
+  /*
+   * Las tarjetas aparecen conforme se baja, y solo la primera vez.
+   *
+   * Arranca cuando se va la portada, no antes: si corriera detrás de ella,
+   * las tarjetas se habrían "gastado" sin que nadie las viera.
+   *
+   * Cada tarjeta se suelta al asomarse y se deja de observar. Un filtro o un
+   * cambio de carrito vuelve a dibujar la cuadrícula, y a partir de ahí sale
+   * puesta de una vez: la entrada es la bienvenida, no un efecto de cada vez.
+   */
+  var cartasAnimadas = false;
+
+  function prepararEntradaDeCartas() {
+    if (cartasAnimadas || menosMovimiento()) return;
+    var cartas = document.querySelectorAll('.producto');
+    for (var i = 0; i < cartas.length; i++) cartas[i].classList.add('entrando');
+    if (portadaCerrada) soltarCartas();
+  }
+
+  function soltarCartas() {
+    if (cartasAnimadas) return;
+    cartasAnimadas = true;
+    var cartas = document.querySelectorAll('.producto.entrando');
+    if (!cartas.length) return;
+
+    function soltar(el, retraso) {
+      setTimeout(function () { el.classList.remove('entrando'); }, retraso);
+    }
+    // Sin IntersectionObserver no se adivina qué se ve: se sueltan todas y
+    // la tienda queda igual de usable, nomás sin el escalonado.
+    if (!window.IntersectionObserver) {
+      for (var i = 0; i < cartas.length; i++) soltar(cartas[i], 0);
+      return;
+    }
+
+    var n = 0;
+    var mirón = new IntersectionObserver(function (entradas) {
+      entradas.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        // El escalonado va por tanda: las que entran juntas se acomodan una
+        // tras otra, no todas de golpe.
+        soltar(e.target, (n++ % 6) * 70);
+        mirón.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -40px 0px' });
+    for (var j = 0; j < cartas.length; j++) mirón.observe(cartas[j]);
   }
 
   // ------------------------------------------------- Arranque instantáneo
@@ -985,6 +1059,8 @@
           '<div id="ctrl-' + esc(p.id) + '" style="padding:0 10px 11px">' + control(p) + '</div>' +
           '</div>';
       }).join('') + '</div>';
+
+    prepararEntradaDeCartas();
   }
 
   // ------------------------------------------------------- Ficha
