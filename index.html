@@ -67,9 +67,10 @@
     clip: rect(0 0 0 0); white-space: nowrap;
   }
   header p {
-    margin: 12px auto 0; max-width: 380px;
-    font-size: 13.5px; line-height: 1.5; color: var(--tenue); text-wrap: pretty;
+    margin: 14px auto 0; max-width: 430px;
+    font-size: 14.5px; line-height: 1.55; color: var(--tenue); text-wrap: pretty;
   }
+  header p b { color: var(--jade-oscuro); font-weight: 700; }
 
   /* ------------------------------------------------------- Buscador */
   .barra {
@@ -229,9 +230,12 @@
   .chip.camino { background: var(--camino); }
   .chip.agotado { background: var(--agotado); }
 
+  /* Va ARRIBA del botón: así el botón siempre es lo último de la tarjeta y
+     todos se leen igual. Debajo, la nota dejaba unas tarjetas con algo
+     colgando después del botón y otras no. */
   .preventa {
     font-size: 11px; line-height: 1.35; color: var(--camino);
-    font-weight: 700; padding: 3px 0 0;
+    font-weight: 700; padding: 0 0 5px;
   }
 
   /* --------------------------------------------------- Carrito */
@@ -403,7 +407,10 @@
 <header>
   <img id="logo" alt="unnibeauty" src="">
   <h1 class="solo-lectores">unnibeauty</h1>
-  <p>skincare coreano original, elegido con calma y explicado sin complicaciones, para que encuentres lo que tu piel necesita</p>
+  <p><b>Tu k-beauty favorito, traído directamente desde Corea.</b>
+    Toca cada producto para ver su descripción y con qué tipos de piel
+    funciona mejor, y encuentra justo lo que la tuya necesita. Arma tu pedido
+    y nosotras nos encargamos del resto, ¡bienvenida!</p>
 </header>
 
 <div class="envoltura">
@@ -891,15 +898,16 @@
     if (!p.sePuedePedir) return '<div class="sin-boton">No disponible por ahora</div>';
     var n = carrito[p.id] || 0;
     if (!n) {
-      return '<button class="enviar wa" onclick="agregar(\'' + esc(p.id) + '\')">Agregar al pedido</button>' +
-        notaPreventa(p, 0);
+      return notaPreventa(p, 0) +
+        '<button class="enviar wa" onclick="agregar(\'' + esc(p.id) + '\')">Agregar al pedido</button>';
     }
-    return '<div class="paso">' +
+    return notaPreventa(p, n) +
+      '<div class="paso">' +
       '<button onclick="cambiar(\'' + esc(p.id) + '\',-1)">−</button>' +
       '<span class="cuenta">' + n + ' en tu pedido</span>' +
       '<button onclick="cambiar(\'' + esc(p.id) + '\',1)"' +
         (n >= p.maximo ? ' disabled style="opacity:.35"' : '') + '>+</button>' +
-      '</div>' + notaPreventa(p, n);
+      '</div>';
   }
 
   function cerrarFicha() {
@@ -989,35 +997,35 @@
     // entre comprarlo y esperarlo, y se decide con esa información, no
     // después.
     if (!p.inmediato) {
-      return '<div class="preventa">De vuelta ' + esc(p.llegada) + '</div>';
+      return '<div class="preventa">Llega ' + esc(p.llegada) + '</div>';
     }
     if (!n || n <= p.inmediato) return '';
     var despues = n - p.inmediato;
     // Las dos partes se entregan por separado, así que se dicen por
-    // separado: "2 salen ya" y "2 de vuelta a partir del…".
+    // separado: "2 salen ya" y "2 llegan a partir del…".
     return '<div class="preventa">' + p.inmediato +
       (p.inmediato === 1 ? ' sale ya' : ' salen ya') + ' · ' + despues +
-      ' de vuelta ' + esc(p.llegada) + '</div>';
+      (despues === 1 ? ' llega ' : ' llegan ') + esc(p.llegada) + '</div>';
   }
 
   function control(p) {
     if (!p.sePuedePedir) return '<div class="sin-boton">No disponible</div>';
     var n = carrito[p.id] || 0;
     if (!n) {
-      return '<button class="agregar" onclick="agregar(\'' + esc(p.id) + '\')">Agregar</button>' +
-        notaPreventa(p, 0);
+      return notaPreventa(p, 0) +
+        '<button class="agregar" onclick="agregar(\'' + esc(p.id) + '\')">Agregar</button>';
     }
     // El + se apaga al llegar a lo que hay. El servidor lo revalida al
     // guardar, porque entre que cargó la página y se envía puede haberse
     // vendido alguna.
     var tope = n >= p.maximo;
-    return '<div class="paso">' +
+    return notaPreventa(p, n) +
+      '<div class="paso">' +
       '<button onclick="cambiar(\'' + esc(p.id) + '\',-1)" aria-label="Quitar uno">−</button>' +
       '<span class="cuenta">' + n + '</span>' +
       '<button onclick="cambiar(\'' + esc(p.id) + '\',1)" aria-label="Agregar uno"' +
         (tope ? ' disabled style="opacity:.35"' : '') + '>+</button>' +
       '</div>' +
-      notaPreventa(p, n) +
       (tope ? '<div class="sin-boton" style="padding:3px 0">' +
         (p.llegada ? 'Es todo lo que podemos apartarte' : 'Es todo lo que hay') +
         '</div>' : '');
